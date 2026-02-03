@@ -30,6 +30,7 @@ class CheckinRecordDto {
   }
 
   String get formattedCheckinTime {
-    return DateFormat('yyyy-MM-dd HH:mm:ss').format(checkinTime);
+    final time = checkinTime.toLocal();
+    return DateFormat('yyyy-MM-dd HH:mm:ss').format(time);
   }
 }
