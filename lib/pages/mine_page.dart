@@ -149,6 +149,8 @@ class _MinePageState extends State<MinePage> {
             onPressed: _isLoading ? null : _onLoginPressed,
             style: ElevatedButton.styleFrom(
               padding: const EdgeInsets.symmetric(vertical: 14),
+              backgroundColor: const Color(0xFF99DE9F),
+              foregroundColor: Colors.white,
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(8),
               ),
@@ -205,6 +207,7 @@ class _MinePageState extends State<MinePage> {
       appBar: AppBar(
         title: const Text('我', style: TextStyle(color: Colors.white)),
         backgroundColor: const Color(0xFF99DE9F),
+        centerTitle: true,
       ),
       body: _isLoggedIn ? _buildLoggedInWidget() : _buildUnloggedInWidget(),
     );

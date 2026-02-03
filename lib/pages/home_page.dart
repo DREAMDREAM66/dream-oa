@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'mine_page.dart';
+import 'tool_page.dart';
 
 class HomePage extends StatefulWidget {
   const HomePage({super.key});
@@ -12,6 +13,7 @@ class _HomePageState extends State<HomePage> {
   int _currentIndex = 0;
 
   final List<Widget> _pages = [
+    ToolPage(),
     MinePage(), // 我的页面
   ];
 
@@ -27,7 +29,8 @@ class _HomePageState extends State<HomePage> {
           });
         },
         items: const [
-          BottomNavigationBarItem(icon: Icon(Icons.person), label: '我'),
+          BottomNavigationBarItem(icon: Icon(Icons.keyboard), label: '工作台'),
+          BottomNavigationBarItem(icon: Icon(Icons.face), label: '我'),
         ],
         selectedItemColor: const Color(0xFF99DE9F),
       ),
