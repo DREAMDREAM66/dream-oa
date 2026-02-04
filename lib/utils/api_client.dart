@@ -79,6 +79,13 @@ class ApiClient {
       final response = await request.close();
       final responseBody = await utf8.decodeStream(response);
       final jsonMap = json.decode(responseBody);
+      // if (response.statusCode != HttpStatus.ok) {
+      //   return QuQResponse<LoginResponseModel>(
+      //     success: jsonMap['success'],
+      //     data: null,
+      //     message: jsonMap['message'],
+      //   );
+      // }
       return QuQResponse.fromJson(
         jsonMap,
         (json) => LoginResponseModel.fromJson(json),
@@ -258,11 +265,66 @@ class ApiClient {
             .toList(),
       );
     } catch (e) {
-      // 7. 全局异常捕获（与getLocation一致）
       return QuQResponse<List<CheckinRecordDto>>(
         success: false,
         data: null,
         message: '获取今日打卡记录失败:${e.toString()}',
+      );
+    }
+  }
+
+  Future<QuQResponse<MonthlyAttendance>> getMonthlyCheckin(
+    DateTime startDate,
+    DateTime endDate,
+  ) async {
+    if (tokenManager.isAccessTokenExpired() &&
+        tokenManager.refreshToken != null) {
+      final refreshSuccess = await _refreshToken();
+      if (!refreshSuccess) {
+        return QuQResponse<MonthlyAttendance>(
+          success: false,
+          data: null,
+          message: '登录已过期，请重新登录',
+        );
+      }
+    }
+    try {
+      final uri = Uri.parse('$baseUrl/Checkin/checkin-info');
+      final request = await _client.postUrl(uri);
+      final accessToken = tokenManager.accessToken;
+      if (accessToken != null && accessToken.isNotEmpty) {
+        request.headers.add('Authorization', 'Bearer $accessToken');
+      }
+      request.headers.add('Content-Type', 'application/json');
+      final requestBody = json.encode({
+        "startDate": startDate.toIso8601String(),
+        "endDate": endDate.toIso8601String(),
+      });
+      request.write(requestBody);
+      final response = await request.close();
+      if (response.statusCode == HttpStatus.unauthorized) {
+        final refreshSuccess = await _refreshToken();
+        if (refreshSuccess) {
+          return getMonthlyCheckin(startDate, endDate);
+        } else {
+          return QuQResponse<MonthlyAttendance>(
+            success: false,
+            data: null,
+            message: '登录已过期，请重新登录',
+          );
+        }
+      }
+      final responseBody = await utf8.decodeStream(response);
+      final jsonMap = json.decode(responseBody);
+      return QuQResponse.fromJson(
+        jsonMap,
+        (json) => MonthlyAttendance.fromJson(json),
+      );
+    } catch (e) {
+      return QuQResponse<MonthlyAttendance>(
+        success: false,
+        data: null,
+        message: '获取打卡记录失败:${e.toString()}',
       );
     }
   }

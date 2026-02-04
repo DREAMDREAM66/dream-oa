@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../models/constants/app_colors.dart';
 import 'mine_page.dart';
 import 'tool_page.dart';
 
@@ -22,6 +23,7 @@ class _HomePageState extends State<HomePage> {
     return Scaffold(
       body: _pages[_currentIndex],
       bottomNavigationBar: BottomNavigationBar(
+        backgroundColor: AppColors.mainBackground,
         currentIndex: _currentIndex,
         onTap: (index) {
           setState(() {
@@ -32,7 +34,7 @@ class _HomePageState extends State<HomePage> {
           BottomNavigationBarItem(icon: Icon(Icons.keyboard), label: '工作台'),
           BottomNavigationBarItem(icon: Icon(Icons.face), label: '我'),
         ],
-        selectedItemColor: const Color(0xFF99DE9F),
+        selectedItemColor: AppColors.primary,
       ),
     );
   }

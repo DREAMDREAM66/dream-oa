@@ -4,13 +4,16 @@ import 'dart:math';
 import 'package:flutter/material.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:intl/intl.dart';
-import 'package:oa_fontend/utils/checkin_utils.dart';
+import '../models/constants/app_colors.dart';
+import '../utils/checkin_utils.dart';
 import '../models/location.dart';
 import '../models/response.dart';
 import '../utils/api_client.dart';
 import '../utils/location_service.dart';
 import '../models/constants/checkin_enums.dart';
 import '../models/checkin.dart';
+import 'package:flutter_calendar_carousel/flutter_calendar_carousel.dart'
+    show CalendarCarousel;
 
 class CheckInPage extends StatefulWidget {
   const CheckInPage({super.key});
@@ -61,6 +64,7 @@ class _CheckInPageState extends State<CheckInPage>
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      backgroundColor: AppColors.mainBackground,
       appBar: AppBar(
         leading: IconButton(
           onPressed: () {
@@ -71,11 +75,12 @@ class _CheckInPageState extends State<CheckInPage>
         title: const Text('考勤打卡'),
         // backgroundColor: const Color(0xFF99DE9F),
         centerTitle: true,
+        backgroundColor: AppColors.mainBackground,
         bottom: TabBar(
           controller: _tabController,
-          labelColor: const Color(0xFF99DE9F),
+          labelColor: AppColors.primary,
           unselectedLabelColor: Colors.grey,
-          indicatorColor: const Color(0xFF99DE9F),
+          indicatorColor: AppColors.primary,
           tabs: const [
             Tab(text: '打卡'),
             Tab(text: '考勤统计'),
@@ -118,7 +123,8 @@ class _CheckInFormPageState extends State<CheckInFormPage> {
   CheckinRecordDto? _workStartRecord;
   CheckinRecordDto? _workEndRecord;
   late Future<Position?> _posFuture;
-  String? _errorMsg;
+  // String? _errorMsg;
+  // static const _themeColor = Color(0xFF99DE9F);
 
   int? _serverTimestamp;
   int? _timeDiff;
@@ -210,7 +216,7 @@ class _CheckInFormPageState extends State<CheckInFormPage> {
             ElevatedButton(
               onPressed: () => Navigator.pop(context, true),
               style: ElevatedButton.styleFrom(
-                backgroundColor: const Color(0xFF99DE9F),
+                backgroundColor: AppColors.primary,
               ),
               child: const Text('确认', style: TextStyle(color: Colors.white)),
             ),
@@ -277,7 +283,7 @@ class _CheckInFormPageState extends State<CheckInFormPage> {
               if (locaSnapshot.connectionState == ConnectionState.waiting) {
                 return const Column(
                   children: [
-                    CircularProgressIndicator(color: Color(0xFF99DE9F)),
+                    CircularProgressIndicator(color: AppColors.primary),
                     SizedBox(height: 16),
                     Text('正在加载...'),
                   ],
@@ -306,7 +312,7 @@ class _CheckInFormPageState extends State<CheckInFormPage> {
                     ElevatedButton(
                       onPressed: widget.onRefresh,
                       style: ElevatedButton.styleFrom(
-                        backgroundColor: const Color(0xFF99DE9F),
+                        backgroundColor: AppColors.primary,
                       ),
                       child: const Text(
                         '重新加载',
@@ -323,7 +329,7 @@ class _CheckInFormPageState extends State<CheckInFormPage> {
                   if (posSnapshot.connectionState == ConnectionState.waiting) {
                     return const Column(
                       children: [
-                        CircularProgressIndicator(color: Color(0xFF99DE9F)),
+                        CircularProgressIndicator(color: AppColors.primary),
                         SizedBox(height: 15),
                         Text('正在定位...'),
                       ],
@@ -368,7 +374,7 @@ class _CheckInFormPageState extends State<CheckInFormPage> {
                       Text(
                         "打卡点:${locationData.name} | 当前距离:$distance米 | 精度:${position.accuracy} | 实际范围:$actual",
                         style: TextStyle(
-                          color: _isInRange ? Colors.green : Colors.red,
+                          color: _isInRange ? AppColors.secondary : Colors.red,
                           fontWeight: FontWeight.w400,
                         ),
                       ),
@@ -376,7 +382,7 @@ class _CheckInFormPageState extends State<CheckInFormPage> {
                       Text(
                         _isInRange ? "已进入打卡范围" : "超出打卡范围",
                         style: TextStyle(
-                          color: _isInRange ? Colors.green : Colors.red,
+                          color: _isInRange ? AppColors.secondary : Colors.red,
                           fontSize: 14,
                         ),
                       ),
@@ -392,7 +398,7 @@ class _CheckInFormPageState extends State<CheckInFormPage> {
                           '重新定位',
                           style: TextStyle(
                             fontSize: 12,
-                            color: Color(0xFF99DE9F),
+                            color: AppColors.primary,
                           ),
                         ),
                       ),
@@ -406,6 +412,7 @@ class _CheckInFormPageState extends State<CheckInFormPage> {
                             onCheckIn: () =>
                                 _handleCheckin(CheckinType.workStart),
                             isLoading: _isLoading,
+                            isShowBtn: true,
                             checkinRecord: _workStartRecord,
                             serverTimestamp: _serverTimestamp,
                             timeDiff: _timeDiff,
@@ -418,6 +425,7 @@ class _CheckInFormPageState extends State<CheckInFormPage> {
                             onCheckIn: () =>
                                 _handleCheckin(CheckinType.workEnd),
                             isLoading: _isLoading,
+                            isShowBtn: _workStartRecord != null,
                             checkinRecord: _workEndRecord,
                             serverTimestamp: _serverTimestamp,
                             timeDiff: _timeDiff,
@@ -447,7 +455,19 @@ class CurrentTimeWidget extends StatefulWidget {
 
 class _CurrentTimeWidgetState extends State<CurrentTimeWidget> {
   late String _formattedTime;
+  late String _weekday;
   late Timer _timer;
+
+  static const List<String> weekdayCN = [
+    '',
+    '周一',
+    '周二',
+    '周三',
+    '周四',
+    '周五',
+    '周六',
+    '周日',
+  ];
 
   @override
   void initState() {
@@ -471,6 +491,7 @@ class _CurrentTimeWidgetState extends State<CurrentTimeWidget> {
       currentTime = DateTime.now();
     }
     _formattedTime = DateFormat('yyyy-MM-dd HH:mm:ss').format(currentTime);
+    _weekday = weekdayCN[currentTime.weekday];
     setState(() {});
   }
 
@@ -483,7 +504,8 @@ class _CurrentTimeWidgetState extends State<CurrentTimeWidget> {
   @override
   Widget build(BuildContext context) {
     return Text(
-      _formattedTime,
+      "$_formattedTime $_weekday",
+      textAlign: TextAlign.center,
       style: const TextStyle(
         fontSize: 18,
         fontWeight: FontWeight.bold,
@@ -499,6 +521,7 @@ class CheckInCard extends StatelessWidget {
   final CheckinType type;
   final VoidCallback onCheckIn;
   final bool isLoading;
+  final bool isShowBtn;
   final CheckinRecordDto? checkinRecord;
   final int? serverTimestamp;
   final int? timeDiff;
@@ -510,6 +533,7 @@ class CheckInCard extends StatelessWidget {
     required this.type,
     required this.onCheckIn,
     required this.isLoading,
+    required this.isShowBtn,
     this.checkinRecord,
     this.serverTimestamp,
     this.timeDiff,
@@ -539,9 +563,9 @@ class CheckInCard extends StatelessWidget {
     final targetDateTime = _parseTimeString(targetTime);
     final isAfterTarget = now.isAfter(targetDateTime);
     if (type == CheckinType.workStart) {
-      return isAfterTarget ? Colors.orange : const Color(0xFF99DE9F);
+      return isAfterTarget ? Colors.orange : AppColors.primary;
     }
-    return isAfterTarget ? const Color(0xFF99DE9F) : Colors.orange;
+    return isAfterTarget ? AppColors.primary : Colors.orange;
   }
 
   String _getStatusText() {
@@ -602,7 +626,7 @@ class CheckInCard extends StatelessWidget {
               textAlign: TextAlign.center,
             ),
             const SizedBox(height: 24),
-            if (!isChecked)
+            if (!isChecked && isShowBtn)
               ElevatedButton(
                 style: ElevatedButton.styleFrom(
                   backgroundColor: buttonColor,
@@ -635,7 +659,7 @@ class CheckInCard extends StatelessWidget {
               Column(
                 children: [
                   Text(
-                    '打卡时间:${checkinRecord!.formattedCheckinTime}',
+                    '打卡时间: ${checkinRecord!.formattedCheckinDayTime}',
                     style: TextStyle(
                       fontSize: 14,
                       color: checkinRecord!.status.color,
@@ -664,144 +688,494 @@ class CheckInCard extends StatelessWidget {
   }
 }
 
-class AttendanceStatisticsPage extends StatelessWidget {
+class AttendanceStatisticsPage extends StatefulWidget {
   const AttendanceStatisticsPage({super.key});
 
   @override
-  Widget build(BuildContext context) {
-    return SingleChildScrollView(
-      padding: const EdgeInsets.all(16.0),
-      child: Column(
-        children: [
-          const SizedBox(height: 20),
-          const Card(
-            elevation: 2,
-            child: Padding(
-              padding: EdgeInsets.all(16.0),
-              child: Column(
+  State<AttendanceStatisticsPage> createState() =>
+      _AttendanceStatisticsPageState();
+}
+
+class _AttendanceStatisticsPageState extends State<AttendanceStatisticsPage> {
+  // List<Event> events =[Event(icon: Icons.local_airport_outlined)]
+  DateTime _currentDate = DateTime.now();
+  bool _isSelected = false;
+  MonthlyAttendance? _monthlyData;
+  bool _isLoading = false;
+  String _errorMsg = '';
+  Map<String, List<CheckinRecordDto>> _dateRecordsMap = {};
+  final _weekendTextStyle = const TextStyle(
+    color: Colors.pinkAccent,
+    fontWeight: FontWeight.normal,
+    fontSize: 14,
+  );
+  final Map<String, HolidayDetail> _holidayMap = {};
+
+  final _daysTextStyle = const TextStyle(
+    color: Colors.black,
+    fontWeight: FontWeight.normal,
+    fontSize: 14,
+  );
+
+  final _todayTextStyle = const TextStyle(
+    color: AppColors.primary,
+    fontWeight: FontWeight.bold,
+  );
+
+  final _selectedDayTextStyle = const TextStyle(
+    color: Colors.white,
+    fontWeight: FontWeight.normal,
+  );
+
+  @override
+  void initState() {
+    super.initState();
+    _fetchMonthlyCheckinData();
+  }
+
+  DateTime _getMonthFirstDay() {
+    return DateTime(_currentDate.year, _currentDate.month, 1);
+  }
+
+  DateTime _getMonthLastDay() {
+    return DateTime(_currentDate.year, _currentDate.month + 1, 0);
+  }
+
+  Future<void> _fetchMonthlyCheckinData() async {
+    try {
+      setState(() {
+        _isLoading = true;
+        _errorMsg = '';
+        _dateRecordsMap.clear();
+        _monthlyData = null;
+        _holidayMap.clear();
+      });
+      final result = await apiClient.getMonthlyCheckin(
+        _getMonthFirstDay(),
+        _getMonthLastDay(),
+      );
+      setState(() {
+        if (result.success) {
+          _monthlyData = result.data;
+          if (result.data != null) {
+            _buildDateRecordsMap(result.data!.records);
+            final Holidays holidays = result.data!.holidays;
+            for (final detail in holidays.holidaysDetail) {
+              _holidayMap[detail.date] = detail;
+            }
+          }
+        } else {
+          _errorMsg = result.message ?? '未知故障';
+        }
+      });
+    } catch (e) {
+      setState(() {
+        _errorMsg = '请求异常:$e';
+      });
+    } finally {
+      setState(() {
+        _isLoading = false;
+      });
+    }
+  }
+
+  void _buildDateRecordsMap(List<CheckinRecordDto> records) {
+    Map<String, List<CheckinRecordDto>> map = {};
+    for (var record in records) {
+      if (!map.containsKey(record.dateStr)) {
+        map[record.dateStr] = [];
+      }
+      map[record.dateStr]!.add(record);
+    }
+    setState(() {
+      _dateRecordsMap = map;
+    });
+  }
+
+  bool _hasAbnormalRecord(String dateStr) {
+    final List<CheckinRecordDto>? records = _dateRecordsMap[dateStr];
+    if (records == null || records.isEmpty) return false;
+    return records.any((r) => r.isAbnormal);
+  }
+
+  String _formatDate(DateTime date) {
+    return DateFormat('yyyy-MM-dd').format(date);
+  }
+
+  bool _isSameDay(DateTime a, DateTime b) {
+    return a.year == b.year && a.month == b.month && a.day == b.day;
+  }
+
+  Widget _buildAttendanceStatistics() {
+    if (_isLoading) {
+      return const Padding(
+        padding: EdgeInsets.all(20),
+        child: CircularProgressIndicator(),
+      );
+    }
+
+    if (_errorMsg.isNotEmpty) {
+      return Padding(
+        padding: const EdgeInsets.all(20),
+        child: Text(
+          _errorMsg,
+          style: const TextStyle(color: Colors.red, fontSize: 14),
+        ),
+      );
+    }
+
+    if (_monthlyData == null) {
+      return const Padding(padding: EdgeInsets.all(20), child: Text('暂无考勤数据'));
+    }
+
+    if (_isSelected) {
+      final String dateStr = _formatDate(_currentDate);
+      final List<CheckinRecordDto>? dayRecords = _dateRecordsMap[dateStr];
+
+      return Card(
+        elevation: 2,
+        color: AppColors.mainBackground,
+        margin: const EdgeInsets.symmetric(horizontal: 0),
+        child: Padding(
+          padding: const EdgeInsets.all(16),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                '${_currentDate.month}月${_currentDate.day}日 考勤详情',
+                style: const TextStyle(
+                  fontSize: 16,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+              const SizedBox(height: 16),
+              if (dayRecords == null || dayRecords.isEmpty)
+                const Center(
+                  child: Text(
+                    '当日无打卡记录',
+                    style: TextStyle(color: Colors.grey, fontSize: 14),
+                  ),
+                )
+              else ...[
+                ...dayRecords.map(
+                  (record) => Container(
+                    margin: const EdgeInsets.only(bottom: 12),
+                    padding: const EdgeInsets.all(12),
+                    decoration: BoxDecoration(
+                      color: Colors.grey[50],
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    child: GridView.count(
+                      shrinkWrap: true,
+                      physics: const NeverScrollableScrollPhysics(),
+                      crossAxisCount: 2,
+                      crossAxisSpacing: 12,
+                      mainAxisSpacing: 4,
+                      childAspectRatio: 2,
+                      // padding: const EdgeInsets.all(4),
+                      children: [
+                        Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Text(
+                              record.checkinTypeText,
+                              style: const TextStyle(
+                                fontSize: 12,
+                                color: Colors.grey,
+                              ),
+                            ),
+                            const SizedBox(height: 4),
+                            Text(
+                              record.formattedCheckinDayTime,
+                              style: TextStyle(
+                                fontSize: 14,
+                                color: record.isAbnormal
+                                    ? Colors.red
+                                    : Colors.black87,
+                                fontWeight: FontWeight.w500,
+                              ),
+                            ),
+                          ],
+                        ),
+                        Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Row(
+                              children: [
+                                const Text(
+                                  '状态: ',
+                                  style: TextStyle(
+                                    fontSize: 12,
+                                    color: Colors.grey,
+                                  ),
+                                ),
+                                Text(
+                                  record.statusText,
+                                  style: TextStyle(
+                                    fontSize: 14,
+                                    color: record.isAbnormal
+                                        ? Colors.red
+                                        : Colors.black87,
+                                  ),
+                                ),
+                              ],
+                            ),
+                            const SizedBox(height: 4),
+                            Row(
+                              children: [
+                                const Text(
+                                  '打卡范围: ',
+                                  style: TextStyle(
+                                    fontSize: 12,
+                                    color: Colors.grey,
+                                  ),
+                                ),
+                                Text(
+                                  record.isInRange ? '在范围内' : '超出范围',
+                                  style: TextStyle(
+                                    fontSize: 14,
+                                    color: record.isInRange
+                                        ? Colors.green
+                                        : Colors.orange,
+                                  ),
+                                ),
+                              ],
+                            ),
+                            const SizedBox(height: 4),
+                            Text(
+                              '${record.longitude.toStringAsFixed(6)}, ${record.latitude.toStringAsFixed(6)}',
+                              style: const TextStyle(
+                                fontSize: 12,
+                                color: Colors.grey,
+                              ),
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                          ],
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              ],
+            ],
+          ),
+        ),
+      );
+    }
+
+    return Card(
+      color: AppColors.mainBackground,
+      elevation: 2,
+      margin: const EdgeInsets.symmetric(horizontal: 0),
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const Text(
+              '月度考勤概览',
+              style: TextStyle(
+                fontSize: 16,
+                color: Colors.black87,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+            const SizedBox(height: 16),
+            Container(
+              padding: const EdgeInsets.all(16),
+              decoration: BoxDecoration(
+                color: Colors.transparent,
+                // borderRadius: BorderRadius.circular(8),
+              ),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  Text(
-                    '2026年1月考勤统计',
-                    style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                  _buildStatItem(
+                    '迟到次数',
+                    _monthlyData!.lateCount.toString(),
+                    Colors.red,
                   ),
-                  SizedBox(height: 20),
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceAround,
-                    children: [
-                      StatItem(title: '应打卡', value: '22天'),
-                      StatItem(title: '已打卡', value: '18天'),
-                      StatItem(title: '迟到', value: '2次'),
-                    ],
+                  _buildStatItem(
+                    '早退次数',
+                    _monthlyData!.leaveEarlyCount.toString(),
+                    Colors.orange,
                   ),
-                  SizedBox(height: 16),
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceAround,
-                    children: [
-                      StatItem(title: '早退', value: '0次'),
-                      StatItem(title: '旷工', value: '0天'),
-                      StatItem(title: '请假', value: '2天'),
-                    ],
+                  _buildStatItem(
+                    '正常次数',
+                    _monthlyData!.normalCount.toString(),
+                    Colors.green,
                   ),
                 ],
               ),
             ),
-          ),
-          const SizedBox(height: 20),
-          const Text(
-            '考勤明细',
-            style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
-          ),
-          const SizedBox(height: 10),
-          AttendanceItem(
-            date: '2026-01-22',
-            checkInTime: '08:55',
-            checkOutTime: '18:05',
-            status: '正常',
-          ),
-          AttendanceItem(
-            date: '2026-01-21',
-            checkInTime: '09:10',
-            checkOutTime: '18:00',
-            status: '迟到',
-          ),
-          AttendanceItem(
-            date: '2026-01-20',
-            checkInTime: '未打卡',
-            checkOutTime: '未打卡',
-            status: '旷工',
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }
-}
 
-class StatItem extends StatelessWidget {
-  final String title;
-  final String value;
-
-  const StatItem({super.key, required this.title, required this.value});
-
-  @override
-  Widget build(BuildContext context) {
+  Widget _buildStatItem(String title, String value, [Color? color]) {
     return Column(
       children: [
         Text(
           value,
-          style: const TextStyle(fontSize: 20, color: Color(0xFF99DE9F)),
+          style: TextStyle(
+            fontSize: 20,
+            color: color ?? AppColors.primary,
+            fontWeight: FontWeight.bold,
+          ),
         ),
         const SizedBox(height: 4),
-        Text(title),
+        Text(title, style: const TextStyle(fontSize: 12, color: Colors.grey)),
       ],
     );
   }
-}
-
-class AttendanceItem extends StatelessWidget {
-  final String date;
-  final String checkInTime;
-  final String checkOutTime;
-  final String status;
-
-  const AttendanceItem({
-    super.key,
-    required this.date,
-    required this.checkInTime,
-    required this.checkOutTime,
-    required this.status,
-  });
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-      margin: const EdgeInsets.only(bottom: 8),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(8),
-        boxShadow: const [
-          BoxShadow(color: Colors.black12, blurRadius: 2, offset: Offset(0, 1)),
-        ],
-      ),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+    final now = DateTime.now();
+    return SingleChildScrollView(
+      padding: const EdgeInsets.all(16.0),
+      child: Column(
         children: [
-          Text(date),
-          Column(
-            crossAxisAlignment: CrossAxisAlignment.end,
-            children: [
-              Text('上班：$checkInTime  下班：$checkOutTime'),
-              const SizedBox(height: 4),
-              Text(
-                status,
-                style: TextStyle(
-                  color: status == '正常' ? Colors.green : Colors.red,
-                ),
+          const SizedBox(height: 8),
+          Card(
+            color: AppColors.mainBackground,
+            elevation: 0,
+            child: CalendarCarousel(
+              scrollDirection: Axis.vertical,
+              showOnlyCurrentMonthDate: true,
+              showWeekDays: true,
+              weekdayTextStyle: const TextStyle(
+                color: Colors.grey,
+                fontSize: 14,
+                fontWeight: FontWeight.normal,
               ),
-            ],
+              daysTextStyle: _daysTextStyle,
+              weekendTextStyle: _weekendTextStyle,
+              todayTextStyle: const TextStyle(
+                color: AppColors.primary,
+                fontWeight: FontWeight.bold,
+              ),
+              todayBorderColor: AppColors.primary,
+              selectedDayButtonColor: AppColors.primary,
+              selectedDayBorderColor: AppColors.primary,
+              selectedDayTextStyle: const TextStyle(color: Colors.white),
+              todayButtonColor: Color(0xFFCBF7ED),
+              height: 360,
+              locale: 'zh_CN',
+              selectedDateTime: _isSelected ? _currentDate : null,
+              customDayBuilder:
+                  (
+                    isSelectable,
+                    index,
+                    isSelectedDay,
+                    isToday,
+                    isPrevMonthDay,
+                    textStyle,
+                    isNextMonthDay,
+                    isThisMonthDay,
+                    day,
+                  ) {
+                    final dateStr = _formatDate(day);
+
+                    final holiday = _holidayMap[dateStr];
+                    // final hasRecords = _dateRecordsMap.containsKey(dateStr);
+                    final isAbnormal = _hasAbnormalRecord(dateStr);
+                    final needRedDot = isAbnormal;
+                    // final needRedDot = isAbnormal || !hasRecords;
+
+                    // 核心诉求，holiday和abnormal(needRedDot)各自有各自画，同时有同时画
+                    TextStyle? holidayTextStyle;
+                    Icon? topLeftIcon;
+                    if (holiday != null) {
+                      if (holiday.type == 'holiday') {
+                        topLeftIcon = const Icon(
+                          Icons.grass,
+                          size: 12,
+                          color: AppColors.primary,
+                        );
+                        holidayTextStyle = _weekendTextStyle;
+                      } else {
+                        topLeftIcon = const Icon(
+                          Icons.work,
+                          size: 12,
+                          color: AppColors.primary,
+                        );
+                        holidayTextStyle = _daysTextStyle;
+                      }
+                    }
+                    final Icon? topRightIcon = needRedDot
+                        ? const Icon(Icons.circle, size: 8, color: Colors.red)
+                        : null;
+                    if (topLeftIcon == null && topRightIcon == null) {
+                      return null;
+                    }
+
+                    return _buildDayWithIcon(
+                      day,
+                      now,
+                      isSelectedDay,
+                      topLeftIcon,
+                      topRightIcon,
+                      customTextStyle: holidayTextStyle,
+                    );
+                  },
+              onDayPressed: (DateTime date, _) {
+                setState(() {
+                  if (_currentDate.day == date.day && _isSelected) {
+                    _isSelected = false;
+                    // 显示总考勤统计
+                  } else {
+                    _isSelected = true;
+                    _currentDate = date;
+                    // 显示selectedDate考勤信息
+                  }
+                });
+              },
+              onCalendarChanged: (DateTime date) {
+                setState(() {
+                  _currentDate = date;
+                  _isSelected = false;
+                });
+                _fetchMonthlyCheckinData();
+              },
+            ),
           ),
+          const SizedBox(height: 20),
+          _buildAttendanceStatistics(),
         ],
       ),
+    );
+  }
+
+  Widget _buildDayWithIcon(
+    DateTime day,
+    DateTime now,
+    bool isSelectedDay,
+    Icon? topLeftIcon,
+    Icon? topRightIcon, {
+    TextStyle? customTextStyle,
+  }) {
+    final targetTextStyle = isSelectedDay
+        ? _selectedDayTextStyle
+        : (customTextStyle ??
+              (_isSameDay(day, now) ? _todayTextStyle : _daysTextStyle));
+
+    final List<Widget> stackChildren = [
+      Text('${day.day}', style: targetTextStyle),
+    ];
+    if (topLeftIcon != null) {
+      stackChildren.add(Positioned(top: 2, left: 2, child: topLeftIcon));
+    }
+    if (topRightIcon != null) {
+      stackChildren.add(Positioned(top: 2, right: 2, child: topRightIcon));
+    }
+    return SizedBox.expand(
+      child: Stack(alignment: Alignment.center, children: stackChildren),
     );
   }
 }

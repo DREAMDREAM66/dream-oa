@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:oa_fontend/models/constants/app_colors.dart';
 import '../../utils/api_client.dart';
 
 class MinePage extends StatefulWidget {
@@ -60,16 +61,16 @@ class _MinePageState extends State<MinePage> {
             context,
           ).showSnackBar(const SnackBar(content: Text('登录成功')));
           setState(() {});
-        } else {
-          setState(() {
-            _errorMsg = loginResponse.message ?? '登录失败，请检查账号密码';
-          });
         }
       } else {
         setState(() {
-          _errorMsg = loginResponse.message!;
+          _errorMsg = loginResponse.message ?? '登录失败，请检查账号密码';
         });
       }
+    } else {
+      setState(() {
+        _errorMsg = loginResponse.message!;
+      });
     }
   }
 
@@ -149,7 +150,7 @@ class _MinePageState extends State<MinePage> {
             onPressed: _isLoading ? null : _onLoginPressed,
             style: ElevatedButton.styleFrom(
               padding: const EdgeInsets.symmetric(vertical: 14),
-              backgroundColor: const Color(0xFF99DE9F),
+              backgroundColor: AppColors.primary,
               foregroundColor: Colors.white,
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(8),
@@ -204,10 +205,11 @@ class _MinePageState extends State<MinePage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      backgroundColor: AppColors.mainBackground,
       appBar: AppBar(
         title: const Text('我', style: TextStyle(color: Colors.white)),
-        backgroundColor: const Color(0xFF99DE9F),
-        centerTitle: true,
+        backgroundColor: AppColors.primary,
+        // centerTitle: true,
       ),
       body: _isLoggedIn ? _buildLoggedInWidget() : _buildUnloggedInWidget(),
     );

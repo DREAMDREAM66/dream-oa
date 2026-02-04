@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../models/constants/app_colors.dart';
 import 'checkin_page.dart';
 
 class ToolPage extends StatelessWidget {
@@ -7,10 +8,11 @@ class ToolPage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      backgroundColor: AppColors.mainBackground,
       appBar: AppBar(
         title: const Text('工作台'),
-        centerTitle: true,
-        backgroundColor: const Color(0xFF99DE9F),
+        // centerTitle: true,
+        backgroundColor: AppColors.primary,
         elevation: 1,
         foregroundColor: Colors.white,
       ),
@@ -57,7 +59,7 @@ class ToolItem extends StatelessWidget {
             width: 64,
             height: 64,
             decoration: BoxDecoration(
-              color: const Color(0xFF99DE9F)..withAlpha(51),
+              color: AppColors.primary..withAlpha(51),
               borderRadius: BorderRadius.circular(16),
             ),
             child: Icon(icon, size: 32, color: Colors.white),
