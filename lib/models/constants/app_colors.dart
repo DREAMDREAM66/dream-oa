@@ -3,7 +3,7 @@ import 'package:flutter/widgets.dart';
 
 /// 全局颜色常量
 /// 命名规则：
-/// 1. 基础色：primary（主题色）、secondary（次要色）、accent（强调色）
+/// 1. 基础色：primary（主题色）、secondary（次要色）、mainBackground（主背景色）
 /// 2. 功能色：success（成功）、warning（警告）、error（错误）、info（信息）
 /// 3. 中性色：white、black、grey100（浅灰）、grey200（中灰）...
 class AppColors {
@@ -17,4 +17,7 @@ class AppColors {
 
   static const Color success = Color(0xFF52C41A);
   static const Color warning = Color(0xFFFAAD14);
+
+  static const Color dividerDark = Color(0xFFE4E4E4);
+  static const Color divider = Color(0xFFF0F0F0);
 }

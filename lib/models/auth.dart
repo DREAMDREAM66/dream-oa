@@ -6,6 +6,7 @@ class LoginResponseModel {
   final String username;
   final String phone;
   final String department;
+  final String title;
   final String role;
 
   LoginResponseModel({
@@ -16,6 +17,7 @@ class LoginResponseModel {
     required this.username,
     required this.phone,
     required this.department,
+    required this.title,
     required this.role,
   });
 
@@ -29,6 +31,7 @@ class LoginResponseModel {
       username: json['username'] ?? '',
       phone: json['phone'] ?? '',
       department: json['department'] ?? '',
+      title: json['title'] ?? '',
       role: json['role'] ?? '',
     );
   }

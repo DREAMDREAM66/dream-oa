@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:oa_fontend/models/constants/app_colors.dart';
+import 'package:oa_fontend/models/constants/text_style.dart';
+import 'package:oa_fontend/utils/user_manager.dart';
 import '../../utils/api_client.dart';
 
 class MinePage extends StatefulWidget {
@@ -21,9 +23,17 @@ class _MinePageState extends State<MinePage> {
   @override
   void initState() {
     super.initState();
-    WidgetsBinding.instance.addPostFrameCallback((_) {
+    _loadUserData();
+    // WidgetsBinding.instance.addPostFrameCallback((_) {
+    //   setState(() {});
+    // });
+  }
+
+  Future<void> _loadUserData() async {
+    await userManager.loadUserInfo();
+    if (mounted) {
       setState(() {});
-    });
+    }
   }
 
   Future<void> _onLoginPressed() async {
@@ -51,10 +61,19 @@ class _MinePageState extends State<MinePage> {
     if (loginResponse.success) {
       final loginData = loginResponse.data!;
       if (loginData.accessToken.isNotEmpty) {
+        // 保存token信息
         await tokenManager.saveToken(
           accessToken: loginData.accessToken,
           refreshToken: loginData.refreshToken,
           accessTokenExpiry: loginData.accessTokenExpiry,
+        );
+        // 保存用户基础信息
+        await userManager.saveUserInfo(
+          username: loginData.username,
+          phone: loginData.phone,
+          department: loginData.department,
+          title: loginData.title,
+          role: loginData.role,
         );
         if (mounted) {
           ScaffoldMessenger.of(
@@ -78,6 +97,7 @@ class _MinePageState extends State<MinePage> {
     final logoutSuccess = await apiClient.logout();
     if (!logoutSuccess) return;
     await tokenManager.clearToken();
+    await userManager.clearUserInfo();
     if (mounted) {
       ScaffoldMessenger.of(
         context,
@@ -86,22 +106,22 @@ class _MinePageState extends State<MinePage> {
     }
   }
 
-  String _formatUtcToLocal(String utcTimeStr) {
-    if (utcTimeStr.isEmpty || utcTimeStr == 'null') {
-      return '未知';
-    }
-    try {
-      DateTime utcDateTime = DateTime.parse(utcTimeStr);
-      DateTime localDateTime = utcDateTime.toLocal();
-      return "${localDateTime.year}-${_addZero(localDateTime.month)}-${_addZero(localDateTime.day)} ${_addZero(localDateTime.hour)}:${_addZero(localDateTime.minute)}:${_addZero(localDateTime.second)}";
-    } catch (e) {
-      return '格式不对吧';
-    }
-  }
+  // String _formatUtcToLocal(String utcTimeStr) {
+  //   if (utcTimeStr.isEmpty || utcTimeStr == 'null') {
+  //     return '未知';
+  //   }
+  //   try {
+  //     DateTime utcDateTime = DateTime.parse(utcTimeStr);
+  //     DateTime localDateTime = utcDateTime.toLocal();
+  //     return "${localDateTime.year}-${_addZero(localDateTime.month)}-${_addZero(localDateTime.day)} ${_addZero(localDateTime.hour)}:${_addZero(localDateTime.minute)}:${_addZero(localDateTime.second)}";
+  //   } catch (e) {
+  //     return '格式不对吧';
+  //   }
+  // }
 
-  String _addZero(int num) {
-    return num.toString().padLeft(2, '0');
-  }
+  // String _addZero(int num) {
+  //   return num.toString().padLeft(2, '0');
+  // }
 
   Widget _buildUnloggedInWidget() {
     return Padding(
@@ -111,11 +131,18 @@ class _MinePageState extends State<MinePage> {
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
           TextField(
+            cursorColor: AppColors.primary,
             controller: _accountController,
             decoration: const InputDecoration(
               labelText: '账号',
               hintText: '请输入账号',
-              border: OutlineInputBorder(),
+              floatingLabelStyle: TextStyle(color: AppColors.primary),
+              enabledBorder: UnderlineInputBorder(
+                borderSide: BorderSide(color: AppColors.dividerDark, width: 1),
+              ),
+              focusedBorder: UnderlineInputBorder(
+                borderSide: BorderSide(color: AppColors.primary, width: 1),
+              ),
               contentPadding: EdgeInsets.symmetric(
                 horizontal: 16,
                 vertical: 12,
@@ -125,12 +152,19 @@ class _MinePageState extends State<MinePage> {
           ),
           const SizedBox(height: 16),
           TextField(
+            cursorColor: AppColors.primary,
             controller: _passwordController,
             obscureText: true,
             decoration: const InputDecoration(
               labelText: '密码',
               hintText: '请输入密码',
-              border: OutlineInputBorder(),
+              floatingLabelStyle: TextStyle(color: AppColors.primary),
+              enabledBorder: UnderlineInputBorder(
+                borderSide: BorderSide(color: AppColors.dividerDark, width: 1),
+              ),
+              focusedBorder: UnderlineInputBorder(
+                borderSide: BorderSide(color: AppColors.primary, width: 1),
+              ),
               contentPadding: EdgeInsets.symmetric(
                 horizontal: 16,
                 vertical: 12,
@@ -169,34 +203,176 @@ class _MinePageState extends State<MinePage> {
   }
 
   Widget _buildLoggedInWidget() {
-    return Center(
+    final String userName = userManager.username ?? '未知用户';
+    final String department = userManager.department ?? '未知部门';
+    final String title = userManager.title ?? '未知职位';
+    return SingleChildScrollView(
       child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          const Icon(Icons.person_pin_circle, size: 80, color: Colors.blue),
-          const SizedBox(height: 16),
-          const Text(
-            '当前登录:',
-            style: TextStyle(fontSize: 18, fontWeight: FontWeight.w500),
-          ),
-          const SizedBox(height: 8),
-          Text(
-            'Token 有效期至：${_formatUtcToLocal(tokenManager.accessTokenExpiry ?? '')}',
-            style: const TextStyle(fontSize: 12, color: Colors.grey),
-            textAlign: TextAlign.center,
-          ),
-          const SizedBox(height: 32),
-          ElevatedButton(
-            onPressed: _onLogoutPressed,
-            style: ElevatedButton.styleFrom(
-              backgroundColor: Colors.redAccent,
-              padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 12),
+          Container(
+            width: double.infinity,
+            padding: const EdgeInsets.all(24),
+            decoration: BoxDecoration(
+              color: Colors.white,
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.grey.withAlpha(25),
+                  spreadRadius: 1,
+                  blurRadius: 5,
+                  offset: const Offset(0, 2),
+                ),
+              ],
             ),
-            child: const Text(
-              '退出登录',
-              style: TextStyle(color: Colors.white, fontSize: 15),
+            child: Column(
+              children: [
+                Row(
+                  children: [
+                    Container(
+                      width: 70,
+                      height: 70,
+                      decoration: BoxDecoration(
+                        gradient: LinearGradient(
+                          colors: [
+                            AppColors.primary,
+                            AppColors.primary.withAlpha(180),
+                          ],
+                          begin: Alignment.topLeft,
+                          end: Alignment.bottomRight,
+                        ),
+                        borderRadius: BorderRadius.circular(35),
+                      ),
+                      child: Center(
+                        child: Text(
+                          userManager.getLastTwoChars(),
+                          style: const TextStyle(
+                            fontSize: 24,
+                            fontWeight: FontWeight.bold,
+                            color: Colors.white,
+                          ),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(width: 20),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            userName,
+                            style: const TextStyle(
+                              fontSize: 22,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                          const SizedBox(height: 4),
+                          Container(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 8,
+                              vertical: 2,
+                            ),
+                            decoration: BoxDecoration(
+                              color: AppColors.primary.withAlpha(25),
+                              borderRadius: BorderRadius.circular(4),
+                            ),
+                            child: Text(
+                              department,
+                              style: const TextStyle(
+                                fontSize: 12,
+                                color: AppColors.primary,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 16),
+                const Divider(color: AppColors.dividerDark, height: 1),
+                const SizedBox(height: 16),
+                Row(
+                  children: [
+                    const Icon(
+                      Icons.work_outline,
+                      size: 20,
+                      color: Colors.grey,
+                    ),
+                    const SizedBox(width: 12),
+                    Text(title, style: AppTextStyle.middleTips),
+                  ],
+                ),
+              ],
             ),
           ),
+          const SizedBox(height: 12),
+          Container(
+            width: double.infinity,
+            margin: const EdgeInsets.symmetric(horizontal: 16),
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(color: AppColors.dividerDark),
+            ),
+            child: Column(
+              children: [
+                _buildFuncItem(
+                  icon: Icons.star_border_outlined,
+                  title: '收藏',
+                  onTap: () {
+                    ScaffoldMessenger.of(
+                      context,
+                    ).showSnackBar(const SnackBar(content: Text('收藏功能开发中')));
+                  },
+                ),
+                const Divider(
+                  height: 1,
+                  indent: 56,
+                  color: AppColors.dividerDark,
+                ),
+                _buildFuncItem(
+                  icon: Icons.settings,
+                  title: '设置',
+                  onTap: () {
+                    ScaffoldMessenger.of(
+                      context,
+                    ).showSnackBar(const SnackBar(content: Text('设置功能开发中')));
+                  },
+                ),
+                const Divider(
+                  height: 1,
+                  indent: 56,
+                  color: AppColors.dividerDark,
+                ),
+                _buildFuncItem(
+                  icon: Icons.info_outline,
+                  title: '关于',
+                  onTap: () => _showAboutDialog(context),
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(height: 20),
+          Container(
+            width: double.infinity,
+            margin: const EdgeInsets.symmetric(horizontal: 16),
+            child: ElevatedButton(
+              onPressed: _onLogoutPressed,
+              style: ElevatedButton.styleFrom(
+                backgroundColor: Colors.white,
+                foregroundColor: Colors.redAccent,
+                padding: const EdgeInsets.symmetric(vertical: 16),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12),
+                  side: const BorderSide(color: Colors.redAccent),
+                ),
+              ),
+              child: const Text(
+                '退出登录',
+                style: TextStyle(fontSize: 16, fontWeight: FontWeight.w500),
+              ),
+            ),
+          ),
+          const SizedBox(height: 20),
         ],
       ),
     );
@@ -207,11 +383,90 @@ class _MinePageState extends State<MinePage> {
     return Scaffold(
       backgroundColor: AppColors.mainBackground,
       appBar: AppBar(
-        title: const Text('我', style: TextStyle(color: Colors.white)),
+        title: const Text('我'),
         backgroundColor: AppColors.primary,
-        // centerTitle: true,
+        foregroundColor: Colors.white,
+        // actions: _isLoggedIn
+        //     ? [
+        //         Padding(
+        //           padding: const EdgeInsets.only(right: 8),
+        //           child: IconButton(
+        //             onPressed: () => _handleSetting(context),
+        //             icon: const Icon(Icons.settings),
+        //           ),
+        //         ),
+        //       ]
+        //     : [],
       ),
       body: _isLoggedIn ? _buildLoggedInWidget() : _buildUnloggedInWidget(),
+    );
+  }
+
+  Widget _buildFuncItem({
+    required IconData icon,
+    required String title,
+    required VoidCallback onTap,
+  }) {
+    return InkWell(
+      onTap: onTap,
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+        child: Row(
+          children: [
+            Container(
+              width: 36,
+              height: 36,
+              decoration: BoxDecoration(
+                color: AppColors.primary.withAlpha(25),
+                borderRadius: BorderRadius.circular(8),
+              ),
+              child: Icon(icon, size: 20, color: AppColors.primary),
+            ),
+            const SizedBox(width: 16),
+            Text(
+              title,
+              style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w500),
+            ),
+            const Spacer(),
+            const Icon(Icons.chevron_right, size: 20, color: Colors.grey),
+          ],
+        ),
+      ),
+    );
+  }
+
+  void _showAboutDialog(BuildContext context) {
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          title: Text('关于'),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              const Icon(Icons.info, size: 48, color: AppColors.primary),
+              const SizedBox(height: 16),
+              const Text(
+                '朝夕-OA',
+                style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+              ),
+              const SizedBox(height: 8),
+              Text('版本 0.0.1', style: TextStyle(color: Colors.grey[600])),
+              const SizedBox(height: 4),
+              Text('开发人员：信息开发部', style: TextStyle(color: Colors.grey[600])),
+            ],
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(context).pop(),
+              child: const Text(
+                '确定',
+                style: TextStyle(color: AppColors.primary),
+              ),
+            ),
+          ],
+        );
+      },
     );
   }
 

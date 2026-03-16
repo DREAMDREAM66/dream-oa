@@ -1,9 +1,34 @@
 import 'package:flutter/material.dart';
 import '../models/constants/app_colors.dart';
 import 'checkin_page.dart';
+import 'affairs_page.dart';
 
 class ToolPage extends StatelessWidget {
   const ToolPage({super.key});
+
+  // 后续需要动态加载功能，需要改为StatefulWidget
+  // List<ToolFunctionModel> _functionList = [
+  //   ToolFunctionModel(
+  //     functionKey: 'check_in',
+  //     title: '打卡',
+  //     iconName: 'access_time',
+  //     isEnabled: true,
+  //   ),
+  //   ToolFunctionModel(
+  //     functionKey: 'affairs',
+  //     title: '事务',
+  //     iconName: 'description',
+  //     isEnabled: true,
+  //   ),
+  // ];通过后端接受这样一个列表
+  //
+  // children: _functionList
+  //                 .map((model) => ToolItem(
+  //                       icon: _getIconFromName(model.iconName),
+  //                       title: model.title,
+  //                       functionKey: model.functionKey,
+  //                     ))
+  //                 .toList(),动态生成
 
   @override
   Widget build(BuildContext context) {
@@ -27,6 +52,11 @@ class ToolPage extends StatelessWidget {
             icon: Icons.access_time,
             title: '打卡',
             functionKey: 'check_in',
+          ),
+          ToolItem(
+            icon: Icons.description,
+            title: '事务',
+            functionKey: 'affairs',
           ),
         ],
       ),
@@ -59,10 +89,11 @@ class ToolItem extends StatelessWidget {
             width: 64,
             height: 64,
             decoration: BoxDecoration(
-              color: AppColors.primary..withAlpha(51),
+              color: AppColors.mainBackground,
               borderRadius: BorderRadius.circular(16),
+              border: Border.all(color: AppColors.primary, width: 1.5),
             ),
-            child: Icon(icon, size: 32, color: Colors.white),
+            child: Icon(icon, size: 32, color: AppColors.primary),
           ),
           const SizedBox(height: 12),
           Text(
@@ -80,6 +111,12 @@ class ToolItem extends StatelessWidget {
         Navigator.push(
           context,
           MaterialPageRoute(builder: (context) => const CheckInPage()),
+        );
+        break;
+      case 'affairs':
+        Navigator.push(
+          context,
+          MaterialPageRoute(builder: (context) => const AffairsPage()),
         );
         break;
       default:

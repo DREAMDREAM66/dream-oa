@@ -4,6 +4,7 @@ import 'dart:math';
 import 'package:flutter/material.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:intl/intl.dart';
+import 'package:oa_fontend/models/constants/text_style.dart';
 import '../models/constants/app_colors.dart';
 import '../utils/checkin_utils.dart';
 import '../models/location.dart';
@@ -76,6 +77,7 @@ class _CheckInPageState extends State<CheckInPage>
         // backgroundColor: const Color(0xFF99DE9F),
         centerTitle: true,
         backgroundColor: AppColors.mainBackground,
+        foregroundColor: AppColors.primary,
         bottom: TabBar(
           controller: _tabController,
           labelColor: AppColors.primary,
@@ -396,10 +398,7 @@ class _CheckInFormPageState extends State<CheckInFormPage> {
                         ),
                         child: const Text(
                           '重新定位',
-                          style: TextStyle(
-                            fontSize: 12,
-                            color: AppColors.primary,
-                          ),
+                          style: AppTextStyle.primaryTips,
                         ),
                       ),
                       const SizedBox(height: 24),
@@ -670,7 +669,7 @@ class CheckInCard extends StatelessWidget {
                   const SizedBox(height: 8),
                   Text(
                     '打卡时间要求:$formattedTarget',
-                    style: const TextStyle(fontSize: 12, color: Colors.grey),
+                    style: AppTextStyle.tips,
                     textAlign: TextAlign.center,
                   ),
                 ],
@@ -678,7 +677,7 @@ class CheckInCard extends StatelessWidget {
             else
               const Text(
                 '今日尚未打卡',
-                style: TextStyle(fontSize: 14, color: Colors.grey),
+                style: AppTextStyle.middleTips,
                 textAlign: TextAlign.center,
               ),
           ],
@@ -851,10 +850,7 @@ class _AttendanceStatisticsPageState extends State<AttendanceStatisticsPage> {
               const SizedBox(height: 16),
               if (dayRecords == null || dayRecords.isEmpty)
                 const Center(
-                  child: Text(
-                    '当日无打卡记录',
-                    style: TextStyle(color: Colors.grey, fontSize: 14),
-                  ),
+                  child: Text('当日无打卡记录', style: AppTextStyle.middleTips),
                 )
               else ...[
                 ...dayRecords.map(
@@ -880,10 +876,7 @@ class _AttendanceStatisticsPageState extends State<AttendanceStatisticsPage> {
                           children: [
                             Text(
                               record.checkinTypeText,
-                              style: const TextStyle(
-                                fontSize: 12,
-                                color: Colors.grey,
-                              ),
+                              style: AppTextStyle.tips,
                             ),
                             const SizedBox(height: 4),
                             Text(
@@ -904,13 +897,7 @@ class _AttendanceStatisticsPageState extends State<AttendanceStatisticsPage> {
                           children: [
                             Row(
                               children: [
-                                const Text(
-                                  '状态: ',
-                                  style: TextStyle(
-                                    fontSize: 12,
-                                    color: Colors.grey,
-                                  ),
-                                ),
+                                const Text('状态: ', style: AppTextStyle.tips),
                                 Text(
                                   record.statusText,
                                   style: TextStyle(
@@ -925,13 +912,7 @@ class _AttendanceStatisticsPageState extends State<AttendanceStatisticsPage> {
                             const SizedBox(height: 4),
                             Row(
                               children: [
-                                const Text(
-                                  '打卡范围: ',
-                                  style: TextStyle(
-                                    fontSize: 12,
-                                    color: Colors.grey,
-                                  ),
-                                ),
+                                const Text('打卡范围: ', style: AppTextStyle.tips),
                                 Text(
                                   record.isInRange ? '在范围内' : '超出范围',
                                   style: TextStyle(
@@ -946,10 +927,7 @@ class _AttendanceStatisticsPageState extends State<AttendanceStatisticsPage> {
                             const SizedBox(height: 4),
                             Text(
                               '${record.longitude.toStringAsFixed(6)}, ${record.latitude.toStringAsFixed(6)}',
-                              style: const TextStyle(
-                                fontSize: 12,
-                                color: Colors.grey,
-                              ),
+                              style: AppTextStyle.tips,
                               maxLines: 1,
                               overflow: TextOverflow.ellipsis,
                             ),
@@ -1029,7 +1007,7 @@ class _AttendanceStatisticsPageState extends State<AttendanceStatisticsPage> {
           ),
         ),
         const SizedBox(height: 4),
-        Text(title, style: const TextStyle(fontSize: 12, color: Colors.grey)),
+        Text(title, style: AppTextStyle.tips),
       ],
     );
   }
