@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:oa_fontend/models/affairs.dart';
 import 'package:oa_fontend/models/constants/app_colors.dart';
 import 'package:oa_fontend/models/constants/text_style.dart';
-import 'feature_page.dart';
+import 'affairs_feature/feature_page.dart';
 
 class AffairsPage extends StatefulWidget {
   const AffairsPage({super.key});

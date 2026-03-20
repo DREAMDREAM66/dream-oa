@@ -22,4 +22,9 @@ class AppTextStyle {
     fontSize: 12,
     color: AppColors.primary,
   );
+
+  static const TextStyle warning = TextStyle(
+    fontSize: 14,
+    color: AppColors.warning,
+  );
 }
