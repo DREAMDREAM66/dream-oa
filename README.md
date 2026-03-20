@@ -61,8 +61,8 @@
    # 可以运行flutter doctor检测运行环境是否完备
    flutter doctor
    ```
-3. **配置**
-   在项目根目录新建.env文件
+3. **配置**  
+   在项目根目录新建.env文件  
    *.env 文件包含敏感信息，已加入 .gitignore，不会上传到仓库。*
    ```
    # 写入后端接口地址
@@ -77,14 +77,14 @@
 
 ### 其它信息
 
-1. **应用图标**
+1. **应用图标**  
    本项目采用flutter_launcher_icons包来生成图标，你可以进行以下操作将图标更改为你喜欢的：
    - 将你的图标源文件(oa_icon.png, 推荐1024x1024)放入assets/icons/目录。
    - 在项目目录下运行
    ```
    flutter pub run flutter_launcher_icons
    ```
-2. **请求接口**
+2. **请求接口**  
    本项目向后端请求的接口都在utils/api_client.dart下定义，你可以修改为你的API
    ``` dart
    final uri = Uri.parse('$baseUrl/Checkin/checkin-info');
