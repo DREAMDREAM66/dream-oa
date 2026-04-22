@@ -91,7 +91,7 @@ The project is currently in its early stages. Implemented features include:
 2. **API Endpoints**  
    All API request definitions are located in utils/api_client.dart. You can modify them to match your backend:
    ``` dart
-   final uri = Uri.parse('$baseUrl/Checkin/checkin-info');
+   final response = await dioClient.dio.get('/Common/current-time');
    ```
 
 ## Contributing

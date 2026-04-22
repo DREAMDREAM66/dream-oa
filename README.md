@@ -91,7 +91,7 @@ cn 简体中文 | us [English](README_EN.md)
 2. **请求接口**  
    本项目向后端请求的接口都在utils/api_client.dart下定义，你可以修改为你的API
    ``` dart
-   final uri = Uri.parse('$baseUrl/Checkin/checkin-info');
+   final response = await dioClient.dio.get('/Common/current-time');
    ```
 
 ## 参与贡献
