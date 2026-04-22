@@ -22,6 +22,8 @@
   <img src="screenshots/leave.jpg" width="28%" alt="Leave" />
 </div>
 
+<small>⚠️ The UI shown in the screenshots may not reflect the latest version. Actual interface is based on the project code.</small>
+
 
 ## Core Features
 
@@ -38,7 +40,7 @@ The project is currently in its early stages. Implemented features include:
 
 - **Framework**: Flutter 3.35.5 (Dart 3.9.2)
 - **State Management**: Built-in setState
-- **Network**: Dio 5.4.0
+- **Network**: Dio 5.9.2
 - **Local Storage**: SharedPreferences
 - **UI Components**: [Calendar: flutter_calendar_carousel](https://github.com/hyochan/flutter_calendar_carousel)
 
