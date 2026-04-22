@@ -9,6 +9,7 @@ import '../models/constants/app_colors.dart';
 import '../utils/checkin_utils.dart';
 import '../models/location.dart';
 import '../models/response.dart';
+import '../utils/user_manager.dart';
 import '../utils/api_client.dart';
 import '../utils/location_service.dart';
 import '../models/constants/checkin_enums.dart';
@@ -50,11 +51,6 @@ class _CheckInPageState extends State<CheckInPage>
     });
   }
 
-  // void _updateCurrentTime() {
-  //   final now = DateTime.now();
-  //   _currentTime = DateFormat('yyyy-MM-dd HH:mm:ss').format(now);
-  // }
-
   @override
   void dispose() {
     _tabController.dispose();
@@ -74,14 +70,13 @@ class _CheckInPageState extends State<CheckInPage>
           icon: const Icon(Icons.arrow_back_ios),
         ),
         title: const Text('考勤打卡'),
-        // backgroundColor: const Color(0xFF99DE9F),
         centerTitle: true,
         backgroundColor: AppColors.mainBackground,
         foregroundColor: AppColors.primary,
         bottom: TabBar(
           controller: _tabController,
           labelColor: AppColors.primary,
-          unselectedLabelColor: Colors.grey,
+          unselectedLabelColor: AppColors.grey,
           indicatorColor: AppColors.primary,
           tabs: const [
             Tab(text: '打卡'),
@@ -125,8 +120,6 @@ class _CheckInFormPageState extends State<CheckInFormPage> {
   CheckinRecordDto? _workStartRecord;
   CheckinRecordDto? _workEndRecord;
   late Future<Position?> _posFuture;
-  // String? _errorMsg;
-  // static const _themeColor = Color(0xFF99DE9F);
 
   int? _serverTimestamp;
   int? _timeDiff;
@@ -180,7 +173,7 @@ class _CheckInFormPageState extends State<CheckInFormPage> {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
               content: Text(result.message ?? '获取打卡记录失败'),
-              backgroundColor: Colors.orange,
+              backgroundColor: AppColors.warning,
             ),
           );
         }
@@ -198,7 +191,6 @@ class _CheckInFormPageState extends State<CheckInFormPage> {
     setState(() {
       _posFuture = _locationService.getCurLocation();
     });
-    // _posFuture = _locationService.getCurLocation();
   }
 
   Future<void> _handleCheckin(CheckinType checkinType) async {
@@ -213,7 +205,7 @@ class _CheckInFormPageState extends State<CheckInFormPage> {
           actions: [
             TextButton(
               onPressed: () => Navigator.pop(context, false),
-              child: const Text("取消", style: TextStyle(color: Colors.grey)),
+              child: const Text("取消", style: TextStyle(color: AppColors.grey)),
             ),
             ElevatedButton(
               onPressed: () => Navigator.pop(context, true),
@@ -248,7 +240,7 @@ class _CheckInFormPageState extends State<CheckInFormPage> {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
               content: Text(result.message ?? "OK"),
-              backgroundColor: Colors.green,
+              backgroundColor: AppColors.success,
             ),
           );
         }
@@ -268,7 +260,7 @@ class _CheckInFormPageState extends State<CheckInFormPage> {
 
   @override
   Widget build(BuildContext context) {
-    return SingleChildScrollView(
+    return Container(
       padding: const EdgeInsets.all(16.0),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.center,
@@ -342,18 +334,24 @@ class _CheckInFormPageState extends State<CheckInFormPage> {
                       children: [
                         const Icon(
                           Icons.location_off,
-                          color: Colors.orange,
+                          color: AppColors.warning,
                           size: 40,
                         ),
                         const SizedBox(height: 16),
                         const Text(
                           "获取定位失败，请检查定位权限和服务",
-                          style: TextStyle(color: Colors.orange),
+                          style: TextStyle(color: AppColors.warning),
                         ),
                         const SizedBox(height: 16),
                         ElevatedButton(
                           onPressed: _fetchLocation,
-                          child: const Text("重新定位"),
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: AppColors.primary,
+                          ),
+                          child: const Text(
+                            '重新定位',
+                            style: TextStyle(color: Colors.white),
+                          ),
                         ),
                       ],
                     );
@@ -371,71 +369,311 @@ class _CheckInFormPageState extends State<CheckInFormPage> {
                       min(position.accuracy * 0.5, locationData.bufferRadius) -
                       1;
                   _isInRange = distance <= actual;
-                  return Column(
-                    children: [
-                      Text(
-                        "打卡点:${locationData.name} | 当前距离:$distance米 | 精度:${position.accuracy} | 实际范围:$actual",
-                        style: TextStyle(
-                          color: _isInRange ? AppColors.secondary : Colors.red,
-                          fontWeight: FontWeight.w400,
+                  // 判断打卡状态
+                  final hasWorkStart = _workStartRecord != null;
+                  final hasWorkEnd = _workEndRecord != null;
+                  final canCheckInWorkStart = !hasWorkStart;
+                  final canCheckInWorkEnd = hasWorkStart && !hasWorkEnd;
+                  return Expanded(
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.spaceAround,
+                      children: [
+                        Column(
+                          children: [
+                            _buildCheckInButton(
+                              canCheckInWorkStart: canCheckInWorkStart,
+                              canCheckInWorkEnd: canCheckInWorkEnd,
+                              hasWorkStart: hasWorkStart,
+                              hasWorkEnd: hasWorkEnd,
+                              locationData: locationData,
+                              isInRange: _isInRange,
+                            ),
+                            const SizedBox(height: 24),
+                            _buildCheckInStatusText(
+                              canCheckInWorkStart: canCheckInWorkStart,
+                              canCheckInWorkEnd: canCheckInWorkEnd,
+                              hasWorkStart: hasWorkStart,
+                              hasWorkEnd: hasWorkEnd,
+                              workStartRecord: _workStartRecord,
+                              workEndRecord: _workEndRecord,
+                            ),
+                          ],
                         ),
-                      ),
-                      const SizedBox(height: 8),
-                      Text(
-                        _isInRange ? "已进入打卡范围" : "超出打卡范围",
-                        style: TextStyle(
-                          color: _isInRange ? AppColors.secondary : Colors.red,
-                          fontSize: 14,
+                        const SizedBox(height: 30),
+                        _buildInfoCard(
+                          locationData,
+                          _isInRange,
+                          _fetchLocation,
                         ),
-                      ),
-                      const SizedBox(height: 8),
-                      TextButton(
-                        onPressed: _fetchLocation,
-                        style: TextButton.styleFrom(
-                          padding: EdgeInsets.zero,
-                          minimumSize: const Size(80, 30),
-                          tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                        ),
-                        child: const Text(
-                          '重新定位',
-                          style: AppTextStyle.primaryTips,
-                        ),
-                      ),
-                      const SizedBox(height: 24),
-                      Column(
-                        children: [
-                          CheckInCard(
-                            title: '上班',
-                            targetTime: locationData.workTimeStart,
-                            type: CheckinType.workStart,
-                            onCheckIn: () =>
-                                _handleCheckin(CheckinType.workStart),
-                            isLoading: _isLoading,
-                            isShowBtn: true,
-                            checkinRecord: _workStartRecord,
-                            serverTimestamp: _serverTimestamp,
-                            timeDiff: _timeDiff,
-                          ),
-                          const SizedBox(height: 20),
-                          CheckInCard(
-                            title: '下班',
-                            targetTime: locationData.workTimeEnd,
-                            type: CheckinType.workEnd,
-                            onCheckIn: () =>
-                                _handleCheckin(CheckinType.workEnd),
-                            isLoading: _isLoading,
-                            isShowBtn: _workStartRecord != null,
-                            checkinRecord: _workEndRecord,
-                            serverTimestamp: _serverTimestamp,
-                            timeDiff: _timeDiff,
-                          ),
-                        ],
-                      ),
-                    ],
+                      ],
+                    ),
                   );
                 },
               );
             },
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildCheckInButton({
+    required bool canCheckInWorkStart,
+    required bool canCheckInWorkEnd,
+    required bool hasWorkStart,
+    required bool hasWorkEnd,
+    required LocationModel locationData,
+    required bool isInRange,
+  }) {
+    String buttonText;
+    CheckinType? checkinType;
+    Color buttonColor = AppColors.primary;
+    bool showButton = true;
+
+    if (canCheckInWorkStart) {
+      buttonText = '上班打卡';
+      checkinType = CheckinType.workStart;
+    } else if (canCheckInWorkEnd) {
+      buttonText = '下班打卡';
+      checkinType = CheckinType.workEnd;
+    } else if (hasWorkStart && hasWorkEnd) {
+      buttonText = '今日已打卡';
+      showButton = false;
+    } else {
+      buttonText = '等待打卡';
+      showButton = false;
+    }
+    if (!isInRange && showButton) {
+      buttonColor = AppColors.warning;
+    }
+    if (!showButton) {
+      return Container(
+        width: 120,
+        height: 120,
+        decoration: BoxDecoration(
+          color: AppColors.success.withAlpha(220),
+          shape: BoxShape.circle,
+          boxShadow: [
+            BoxShadow(
+              color: AppColors.success.withAlpha(76),
+              blurRadius: 12,
+              offset: const Offset(0, 4),
+            ),
+          ],
+        ),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            const Icon(Icons.check, color: Colors.white, size: 32),
+            const SizedBox(height: 2),
+            Text(
+              buttonText,
+              style: const TextStyle(
+                fontSize: 12,
+                color: Colors.white,
+                fontWeight: FontWeight.w500,
+              ),
+            ),
+          ],
+        ),
+      );
+    }
+    return GestureDetector(
+      onTap: _isLoading
+          ? null
+          : () {
+              if (checkinType != null) {
+                _handleCheckin(checkinType);
+              }
+            },
+      child: Container(
+        width: 120,
+        height: 120,
+        decoration: BoxDecoration(
+          color: buttonColor,
+          shape: BoxShape.circle,
+          boxShadow: [
+            BoxShadow(
+              color: buttonColor.withAlpha(100),
+              blurRadius: 12,
+              offset: const Offset(0, 4),
+            ),
+          ],
+        ),
+        child: _isLoading
+            ? const Center(
+                child: SizedBox(
+                  width: 32,
+                  height: 32,
+                  child: CircularProgressIndicator(
+                    strokeWidth: 3,
+                    color: Colors.white,
+                  ),
+                ),
+              )
+            : Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  const Icon(Icons.touch_app, color: Colors.white, size: 32),
+                  const SizedBox(height: 2),
+                  Text(
+                    buttonText,
+                    style: const TextStyle(
+                      fontSize: 12,
+                      color: Colors.white,
+                      fontWeight: FontWeight.w500,
+                    ),
+                  ),
+                ],
+              ),
+      ),
+    );
+  }
+
+  Widget _buildCheckInStatusText({
+    required bool canCheckInWorkStart,
+    required bool canCheckInWorkEnd,
+    required bool hasWorkStart,
+    required bool hasWorkEnd,
+    CheckinRecordDto? workStartRecord,
+    CheckinRecordDto? workEndRecord,
+  }) {
+    Widget content;
+    if (hasWorkStart && hasWorkEnd) {
+      final workStartTime = DateFormat(
+        'HH:mm:ss',
+      ).format(workStartRecord!.checkinTime);
+      final workEndTime = DateFormat(
+        'HH:mm:ss',
+      ).format(workEndRecord!.checkinTime);
+      content = Column(
+        children: [
+          const Text(
+            '今日考勤已完成',
+            style: TextStyle(
+              fontSize: 14,
+              color: AppColors.lightPrimary,
+              fontWeight: FontWeight.w500,
+            ),
+          ),
+          const SizedBox(height: 4),
+          Text(
+            '上班卡 - $workStartTime',
+            style: const TextStyle(fontSize: 12, color: Color(0xFF9CA3AF)),
+          ),
+          Text(
+            '下班卡 - $workEndTime',
+            style: const TextStyle(fontSize: 12, color: Color(0xFF9CA3AF)),
+          ),
+        ],
+      );
+    } else if (hasWorkStart) {
+      final workStartTime = DateFormat(
+        'HH:mm:ss',
+      ).format(workStartRecord!.checkinTime);
+      content = Column(
+        children: [
+          Text(
+            '上班卡 - $workStartTime',
+            style: const TextStyle(fontSize: 14, color: AppColors.lightPrimary),
+          ),
+          const SizedBox(height: 4),
+          Text(
+            canCheckInWorkEnd ? '等待下班打卡...' : '',
+            style: const TextStyle(fontSize: 12, color: Color(0xFF9CA3AF)),
+          ),
+        ],
+      );
+    } else {
+      content = Text(
+        canCheckInWorkStart ? '点击上方按钮进行上班打卡' : '',
+        style: const TextStyle(fontSize: 12, color: Color(0xFF9CA3AF)),
+      );
+    }
+    return SizedBox(
+      height: 80,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [content, const Spacer()],
+      ),
+    );
+  }
+
+  Widget _buildInfoCard(
+    LocationModel locationData,
+    bool isInRange,
+    VoidCallback onFetchLoca,
+  ) {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(12),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withAlpha(13),
+            blurRadius: 8,
+            offset: const Offset(0, 2),
+          ),
+        ],
+      ),
+      child: Row(
+        children: [
+          Container(
+            padding: const EdgeInsets.all(6),
+            decoration: BoxDecoration(
+              color: _isInRange
+                  ? AppColors.lightPrimary.withAlpha(25)
+                  : AppColors.warning.withAlpha(25),
+              borderRadius: BorderRadius.circular(8),
+            ),
+            child: _isInRange
+                ? const Icon(
+                    Icons.check_circle,
+                    color: AppColors.lightPrimary,
+                    size: 20,
+                  )
+                : const Icon(
+                    Icons.location_off,
+                    color: AppColors.warning,
+                    size: 20,
+                  ),
+          ),
+          const SizedBox(width: 12),
+          Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                userManager.username ?? '',
+                style: const TextStyle(
+                  fontSize: 14,
+                  fontWeight: FontWeight.w500,
+                  color: Color(0xFF1F2937),
+                ),
+              ),
+              const SizedBox(height: 2),
+              Text(
+                isInRange ? '已进入考勤范围' : '在考勤范围外',
+                style: const TextStyle(fontSize: 12, color: Color(0xFF9CA3AF)),
+              ),
+            ],
+          ),
+          Expanded(
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.end,
+              children: [
+                TextButton(
+                  onPressed: onFetchLoca,
+                  style: TextButton.styleFrom(
+                    padding: EdgeInsets.zero,
+                    minimumSize: const Size(80, 30),
+                    tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                  ),
+                  child: const Text('刷新定位', style: AppTextStyle.primaryTips),
+                ),
+              ],
+            ),
           ),
         ],
       ),
@@ -453,6 +691,7 @@ class CurrentTimeWidget extends StatefulWidget {
 }
 
 class _CurrentTimeWidgetState extends State<CurrentTimeWidget> {
+  late String _formattedDate;
   late String _formattedTime;
   late String _weekday;
   late Timer _timer;
@@ -489,7 +728,8 @@ class _CurrentTimeWidgetState extends State<CurrentTimeWidget> {
     } else {
       currentTime = DateTime.now();
     }
-    _formattedTime = DateFormat('yyyy-MM-dd HH:mm:ss').format(currentTime);
+    _formattedDate = '${currentTime.month}月${currentTime.day}日';
+    _formattedTime = DateFormat('HH:mm:ss').format(currentTime);
     _weekday = weekdayCN[currentTime.weekday];
     setState(() {});
   }
@@ -502,190 +742,30 @@ class _CurrentTimeWidgetState extends State<CurrentTimeWidget> {
 
   @override
   Widget build(BuildContext context) {
-    return Text(
-      "$_formattedTime $_weekday",
-      textAlign: TextAlign.center,
-      style: const TextStyle(
-        fontSize: 18,
-        fontWeight: FontWeight.bold,
-        color: Colors.black87,
-      ),
-    );
-  }
-}
-
-class CheckInCard extends StatelessWidget {
-  final String title;
-  final String targetTime;
-  final CheckinType type;
-  final VoidCallback onCheckIn;
-  final bool isLoading;
-  final bool isShowBtn;
-  final CheckinRecordDto? checkinRecord;
-  final int? serverTimestamp;
-  final int? timeDiff;
-
-  const CheckInCard({
-    super.key,
-    required this.title,
-    required this.targetTime,
-    required this.type,
-    required this.onCheckIn,
-    required this.isLoading,
-    required this.isShowBtn,
-    this.checkinRecord,
-    this.serverTimestamp,
-    this.timeDiff,
-  });
-
-  DateTime _parseTimeString(String timeStr) {
-    final parts = timeStr.split(':');
-    final now = DateTime.now();
-    return DateTime(
-      now.year,
-      now.month,
-      now.day,
-      int.parse(parts[0]),
-      int.parse(parts[1]),
-      int.parse(parts[2]),
-    );
-  }
-
-  Color _getButtonColor() {
-    DateTime now;
-    if (serverTimestamp != null && timeDiff != null) {
-      final realServerTime = DateTime.now().millisecondsSinceEpoch - timeDiff!;
-      now = DateTime.fromMillisecondsSinceEpoch(realServerTime);
-    } else {
-      now = DateTime.now();
-    }
-    final targetDateTime = _parseTimeString(targetTime);
-    final isAfterTarget = now.isAfter(targetDateTime);
-    if (type == CheckinType.workStart) {
-      return isAfterTarget ? Colors.orange : AppColors.primary;
-    }
-    return isAfterTarget ? AppColors.primary : Colors.orange;
-  }
-
-  String _getStatusText() {
-    if (checkinRecord != null) {
-      return checkinRecord!.status.desc;
-    }
-    final targetDateTime = _parseTimeString(targetTime);
-    final now = DateTime.now();
-    final isAfterTarget = now.isAfter(targetDateTime);
-    final formattedTarget = DateFormat('HH:mm').format(targetDateTime);
-    if (type == CheckinType.workStart) {
-      return isAfterTarget
-          ? '打卡截止时间：$formattedTarget（已超时）'
-          : '打卡截止时间：$formattedTarget（可打卡）';
-    }
-    return isAfterTarget
-        ? '打卡开始时间：$formattedTarget（可打卡）'
-        : '打卡开始时间：$formattedTarget（未到时间）';
-  }
-
-  Color _getTextColor(Color buttonColor) {
-    if (checkinRecord != null) {
-      return checkinRecord!.status.color;
-    }
-    return buttonColor;
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    final buttonColor = _getButtonColor();
-    final statusText = _getStatusText();
-    final isChecked = checkinRecord != null;
-    final formattedTarget = DateFormat(
-      'HH:mm',
-    ).format(_parseTimeString(targetTime));
-
-    return Card(
-      elevation: 4,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-      child: Padding(
-        padding: const EdgeInsets.all(20.0),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            Text(
-              title,
-              style: const TextStyle(
-                fontSize: 20,
-                fontWeight: FontWeight.bold,
-                color: Colors.black87,
-              ),
-              textAlign: TextAlign.center,
-            ),
-            const SizedBox(height: 16),
-            Text(
-              statusText,
-              style: TextStyle(fontSize: 14, color: _getTextColor(buttonColor)),
-              textAlign: TextAlign.center,
-            ),
-            const SizedBox(height: 24),
-            if (!isChecked && isShowBtn)
-              ElevatedButton(
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: buttonColor,
-                  minimumSize: const Size(double.infinity, 60),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(8),
-                  ),
-                  elevation: 2,
-                ),
-                onPressed: isLoading ? null : onCheckIn,
-                child: isLoading
-                    ? const SizedBox(
-                        width: 20,
-                        height: 20,
-                        child: CircularProgressIndicator(
-                          strokeWidth: 2,
-                          color: Colors.white,
-                        ),
-                      )
-                    : Text(
-                        '$title打卡',
-                        style: const TextStyle(
-                          fontSize: 18,
-                          color: Colors.white,
-                          fontWeight: FontWeight.w500,
-                        ),
-                      ),
-              ),
-            if (isChecked)
-              Column(
-                children: [
-                  Text(
-                    '打卡时间: ${checkinRecord!.formattedCheckinDayTime}',
-                    style: TextStyle(
-                      fontSize: 14,
-                      color: checkinRecord!.status.color,
-                      fontWeight: FontWeight.w400,
-                    ),
-                    textAlign: TextAlign.center,
-                  ),
-                  const SizedBox(height: 8),
-                  Text(
-                    '打卡时间要求:$formattedTarget',
-                    style: AppTextStyle.tips,
-                    textAlign: TextAlign.center,
-                  ),
-                ],
-              )
-            else
-              const Text(
-                '今日尚未打卡',
-                style: AppTextStyle.middleTips,
-                textAlign: TextAlign.center,
-              ),
-          ],
+    return Column(
+      mainAxisAlignment: MainAxisAlignment.center,
+      children: [
+        Text(
+          "$_formattedDate $_weekday",
+          style: const TextStyle(fontSize: 16, color: Color(0xFF9CA3AF)),
         ),
-      ),
+        const SizedBox(height: 4),
+        Text(
+          _formattedTime,
+          style: const TextStyle(
+            fontSize: 48,
+            fontWeight: FontWeight.bold,
+            color: Color(0xFF1F2937),
+            letterSpacing: 2,
+          ),
+        ),
+      ],
     );
   }
 }
+
+//-----------------------------------------------------
+// 打卡记录
 
 class AttendanceStatisticsPage extends StatefulWidget {
   const AttendanceStatisticsPage({super.key});
@@ -885,7 +965,7 @@ class _AttendanceStatisticsPageState extends State<AttendanceStatisticsPage> {
                                 fontSize: 14,
                                 color: record.isAbnormal
                                     ? Colors.red
-                                    : Colors.black87,
+                                    : AppColors.black87,
                                 fontWeight: FontWeight.w500,
                               ),
                             ),
@@ -904,7 +984,7 @@ class _AttendanceStatisticsPageState extends State<AttendanceStatisticsPage> {
                                     fontSize: 14,
                                     color: record.isAbnormal
                                         ? Colors.red
-                                        : Colors.black87,
+                                        : AppColors.black87,
                                   ),
                                 ),
                               ],
@@ -918,8 +998,8 @@ class _AttendanceStatisticsPageState extends State<AttendanceStatisticsPage> {
                                   style: TextStyle(
                                     fontSize: 14,
                                     color: record.isInRange
-                                        ? Colors.green
-                                        : Colors.orange,
+                                        ? AppColors.success
+                                        : AppColors.warning,
                                   ),
                                 ),
                               ],
@@ -957,7 +1037,7 @@ class _AttendanceStatisticsPageState extends State<AttendanceStatisticsPage> {
               '月度考勤概览',
               style: TextStyle(
                 fontSize: 16,
-                color: Colors.black87,
+                color: AppColors.black87,
                 fontWeight: FontWeight.bold,
               ),
             ),
@@ -979,12 +1059,12 @@ class _AttendanceStatisticsPageState extends State<AttendanceStatisticsPage> {
                   _buildStatItem(
                     '早退次数',
                     _monthlyData!.leaveEarlyCount.toString(),
-                    Colors.orange,
+                    AppColors.warning,
                   ),
                   _buildStatItem(
                     '正常次数',
                     _monthlyData!.normalCount.toString(),
-                    Colors.green,
+                    AppColors.success,
                   ),
                 ],
               ),
@@ -1028,7 +1108,7 @@ class _AttendanceStatisticsPageState extends State<AttendanceStatisticsPage> {
               showOnlyCurrentMonthDate: true,
               showWeekDays: true,
               weekdayTextStyle: const TextStyle(
-                color: Colors.grey,
+                color: AppColors.grey,
                 fontSize: 14,
                 fontWeight: FontWeight.normal,
               ),

@@ -8,6 +8,7 @@ import '../models/response.dart';
 import '../models/auth.dart';
 import '../models/location.dart';
 import '../models/checkin.dart';
+import '../models/approval.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 const _kAccessTokenKey = 'access_token';
@@ -389,6 +390,60 @@ class ApiClient {
       );
     } catch (e) {
       return QuQResponse<CheckinRecordDto>(
+        success: false,
+        data: null,
+        message: '请求失败:${e.toString()}',
+      );
+    }
+  }
+
+  Future<QuQResponse<String>> submitApproval(
+    SubmitApprovalRequest submitRequest,
+  ) async {
+    if (tokenManager.isAccessTokenExpired() &&
+        tokenManager.refreshToken != null) {
+      final refreshSuccess = await _refreshToken();
+      if (!refreshSuccess) {
+        return QuQResponse<String>(
+          success: false,
+          data: null,
+          message: '登录已过期，请重新登录',
+        );
+      }
+    }
+    try {
+      final uri = Uri.parse('$baseUrl/Approval/submit');
+      final request = await _client.postUrl(uri);
+      final accessToken = tokenManager.accessToken;
+      if (accessToken != null && accessToken.isNotEmpty) {
+        request.headers.add('Authorization', 'Bearer $accessToken');
+      }
+      request.headers.add('Content-Type', 'application/json');
+      final requestBody = json.encode(submitRequest);
+      final bodyBtyes = utf8.encode(requestBody);
+      request.add(bodyBtyes);
+      final response = await request.close();
+      if (response.statusCode == HttpStatus.unauthorized) {
+        final refreshSuccess = await _refreshToken();
+        if (refreshSuccess) {
+          return submitApproval(submitRequest);
+        } else {
+          return QuQResponse<String>(
+            success: false,
+            data: null,
+            message: '登录已过期，请重新登录',
+          );
+        }
+      }
+      final responseBody = await utf8.decodeStream(response);
+      final jsonMap = json.decode(responseBody);
+      return QuQResponse<String>(
+        success: jsonMap['success'] ?? false,
+        message: jsonMap['message'] ?? '',
+        data: jsonMap['data'] ?? '',
+      );
+    } catch (e) {
+      return QuQResponse<String>(
         success: false,
         data: null,
         message: '请求失败:${e.toString()}',

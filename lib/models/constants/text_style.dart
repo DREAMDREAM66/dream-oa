@@ -13,10 +13,10 @@ class AppTextStyle {
     fontSize: 12,
     color: Colors.black54,
   );
-  static const TextStyle tips = TextStyle(fontSize: 12, color: Colors.grey);
+  static const TextStyle tips = TextStyle(fontSize: 12, color: AppColors.grey);
   static const TextStyle middleTips = TextStyle(
     fontSize: 14,
-    color: Colors.grey,
+    color: AppColors.grey,
   );
   static const TextStyle primaryTips = TextStyle(
     fontSize: 12,

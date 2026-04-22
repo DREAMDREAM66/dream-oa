@@ -102,20 +102,20 @@ class _AffairsPageState extends State<AffairsPage> {
                         icon: const Icon(
                           Icons.clear,
                           size: 16,
-                          color: Colors.grey,
+                          color: AppColors.grey,
                         ),
                       )
                     : IconButton(
                         onPressed: _performSearch,
-                        icon: Icon(Icons.search, size: 16, color: Colors.grey),
+                        icon: Icon(Icons.search, size: 16, color: AppColors.grey),
                       ),
                 border: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(8),
-                  borderSide: BorderSide(color: Colors.grey, width: 1),
+                  borderSide: BorderSide(color: AppColors.grey, width: 1),
                 ),
                 enabledBorder: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(8),
-                  borderSide: BorderSide(color: Colors.grey, width: 1),
+                  borderSide: BorderSide(color: AppColors.grey, width: 1),
                 ),
                 focusedBorder: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(8),
@@ -138,7 +138,7 @@ class _AffairsPageState extends State<AffairsPage> {
                     child: Column(
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
-                        Icon(Icons.search_off, size: 48, color: Colors.grey),
+                        Icon(Icons.search_off, size: 48, color: AppColors.grey),
                         SizedBox(height: 12),
                         Text('未找到匹配的事务类型', style: AppTextStyle.tips),
                       ],
@@ -224,7 +224,7 @@ class _AccordionMenuState extends State<_AccordionMenu> {
                       ? Icons.keyboard_arrow_down
                       : Icons.keyboard_arrow_right,
                   size: 18,
-                  color: Colors.grey,
+                  color: AppColors.grey,
                 ),
               ],
             ),
@@ -259,7 +259,7 @@ class _SubMenuTitle extends StatelessWidget {
         padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 8),
         child: Row(
           children: [
-            Icon(Icons.label_outline, size: 14, color: Colors.grey),
+            Icon(Icons.label_outline, size: 14, color: AppColors.grey),
             const SizedBox(width: 8),
             Text(title, style: titleStyle),
           ],

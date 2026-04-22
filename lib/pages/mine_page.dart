@@ -124,80 +124,176 @@ class _MinePageState extends State<MinePage> {
   // }
 
   Widget _buildUnloggedInWidget() {
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 24.0),
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          TextField(
-            cursorColor: AppColors.primary,
-            controller: _accountController,
-            decoration: const InputDecoration(
-              labelText: '账号',
+    return Center(
+      child: SingleChildScrollView(
+        padding: const EdgeInsets.symmetric(horizontal: 32),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.start,
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            const SizedBox(height: 60),
+            // 欢迎文字
+            const Text(
+              '欢迎回来',
+              style: TextStyle(
+                fontSize: 28,
+                fontWeight: FontWeight.bold,
+                color: AppColors.neuTextPrimary,
+                letterSpacing: 0.5,
+              ),
+            ),
+            const SizedBox(height: 8),
+            const Text(
+              '登录后即可使用更多功能',
+              style: TextStyle(fontSize: 14, color: AppColors.neuTextSecondary),
+            ),
+            const SizedBox(height: 40),
+            // 账号输入框
+            _buildInputField(
+              controller: _accountController,
               hintText: '请输入账号',
-              floatingLabelStyle: TextStyle(color: AppColors.primary),
-              enabledBorder: UnderlineInputBorder(
-                borderSide: BorderSide(color: AppColors.dividerDark, width: 1),
-              ),
-              focusedBorder: UnderlineInputBorder(
-                borderSide: BorderSide(color: AppColors.primary, width: 1),
-              ),
-              contentPadding: EdgeInsets.symmetric(
-                horizontal: 16,
-                vertical: 12,
-              ),
+              prefixIcon: Icons.phone_android_outlined,
+              enabled: !_isLoading,
             ),
-            enabled: !_isLoading,
-          ),
-          const SizedBox(height: 16),
-          TextField(
-            cursorColor: AppColors.primary,
-            controller: _passwordController,
-            obscureText: true,
-            decoration: const InputDecoration(
-              labelText: '密码',
+            const SizedBox(height: 16),
+            // 密码输入框
+            _buildInputField(
+              controller: _passwordController,
               hintText: '请输入密码',
-              floatingLabelStyle: TextStyle(color: AppColors.primary),
-              enabledBorder: UnderlineInputBorder(
-                borderSide: BorderSide(color: AppColors.dividerDark, width: 1),
-              ),
-              focusedBorder: UnderlineInputBorder(
-                borderSide: BorderSide(color: AppColors.primary, width: 1),
-              ),
-              contentPadding: EdgeInsets.symmetric(
-                horizontal: 16,
-                vertical: 12,
-              ),
+              prefixIcon: Icons.lock_outline_rounded,
+              obscureText: true,
+              enabled: !_isLoading,
             ),
-            enabled: !_isLoading,
-          ),
-          const SizedBox(height: 8),
-          if (_errorMsg.isNotEmpty)
-            Text(
-              _errorMsg,
-              style: const TextStyle(color: Colors.red, fontSize: 12),
-              textAlign: TextAlign.left,
-            ),
-          const SizedBox(height: 24),
-          ElevatedButton(
-            onPressed: _isLoading ? null : _onLoginPressed,
-            style: ElevatedButton.styleFrom(
-              padding: const EdgeInsets.symmetric(vertical: 14),
-              backgroundColor: AppColors.primary,
-              foregroundColor: Colors.white,
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(8),
+            // 错误提示
+            if (_errorMsg.isNotEmpty) ...[
+              const SizedBox(height: 12),
+              Container(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 12,
+                  vertical: 8,
+                ),
+                decoration: BoxDecoration(
+                  color: Colors.red.shade50,
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: Row(
+                  children: [
+                    Icon(
+                      Icons.error_outline_rounded,
+                      size: 16,
+                      color: Colors.red.shade400,
+                    ),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: Text(
+                        _errorMsg,
+                        style: TextStyle(
+                          fontSize: 12,
+                          color: Colors.red.shade400,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
               ),
-            ),
-            child: _isLoading
-                ? const CircularProgressIndicator(
+            ],
+            const SizedBox(height: 32),
+            // 登录按钮
+            _buildLoginButton(),
+            const SizedBox(height: 40),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildInputField({
+    required TextEditingController controller,
+    required String hintText,
+    required IconData prefixIcon,
+    bool obscureText = false,
+    bool enabled = true,
+  }) {
+    return TextField(
+      controller: controller,
+      obscureText: obscureText,
+      enabled: enabled,
+      style: const TextStyle(fontSize: 15),
+      decoration: InputDecoration(
+        hintText: hintText,
+        hintStyle: const TextStyle(
+          color: AppColors.neuTextSecondary,
+          fontSize: 14,
+        ),
+        prefixIcon: Icon(
+          prefixIcon,
+          size: 20,
+          color: AppColors.neuTextSecondary,
+        ),
+        filled: true,
+        fillColor: AppColors.mainBackground,
+        contentPadding: const EdgeInsets.symmetric(
+          horizontal: 16,
+          vertical: 14,
+        ),
+        border: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(12),
+          borderSide: BorderSide.none,
+        ),
+        enabledBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(12),
+          borderSide: BorderSide.none,
+        ),
+        focusedBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(12),
+          borderSide: const BorderSide(color: AppColors.primary, width: 1.5),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildLoginButton() {
+    // 这里用GestureDetector(手势检测器)而不是ElevatedButton，是因为这样能很简洁地实现动态的样式
+    // 另外，ElevatedButton本质上是套了几层的GestureDetector
+    return GestureDetector(
+      onTap: _isLoading ? null : _onLoginPressed,
+      child: Container(
+        height: 50,
+        decoration: BoxDecoration(
+          color: _isLoading
+              ? AppColors.primary.withAlpha(153)
+              : AppColors.primary,
+          borderRadius: BorderRadius.circular(14),
+          boxShadow: _isLoading
+              ? null
+              : [
+                  BoxShadow(
+                    color: AppColors.primary.withAlpha(102),
+                    blurRadius: 12,
+                    offset: const Offset(0, 4),
+                  ),
+                ],
+        ),
+        child: Center(
+          child: _isLoading
+              ? const SizedBox(
+                  width: 22,
+                  height: 22,
+                  child: CircularProgressIndicator(
                     color: Colors.white,
-                    strokeWidth: 2,
-                  )
-                : const Text('登录', style: TextStyle(fontSize: 16)),
-          ),
-        ],
+                    strokeWidth: 2.5,
+                  ),
+                )
+              : const Text(
+                  '登 录',
+                  style: TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.w600,
+                    color: Colors.white,
+                    letterSpacing: 1.2,
+                  ),
+                ),
+        ),
       ),
     );
   }
@@ -295,7 +391,7 @@ class _MinePageState extends State<MinePage> {
                     const Icon(
                       Icons.work_outline,
                       size: 20,
-                      color: Colors.grey,
+                      color: AppColors.grey,
                     ),
                     const SizedBox(width: 12),
                     Text(title, style: AppTextStyle.middleTips),
@@ -428,7 +524,7 @@ class _MinePageState extends State<MinePage> {
               style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w500),
             ),
             const Spacer(),
-            const Icon(Icons.chevron_right, size: 20, color: Colors.grey),
+            const Icon(Icons.chevron_right, size: 20, color: AppColors.grey),
           ],
         ),
       ),
@@ -451,9 +547,9 @@ class _MinePageState extends State<MinePage> {
                 style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
               ),
               const SizedBox(height: 8),
-              Text('版本 0.0.1', style: TextStyle(color: Colors.grey[600])),
+              Text('版本 0.0.1', style: TextStyle(color: AppColors.grey600)),
               const SizedBox(height: 4),
-              Text('开发人员：信息开发部', style: TextStyle(color: Colors.grey[600])),
+              Text('开发人员：信息开发部', style: TextStyle(color: AppColors.grey600)),
             ],
           ),
           actions: [

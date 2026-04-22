@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:oa_fontend/models/constants/app_colors.dart';
 
 enum CheckinType {
   workStart(1), // 上班
@@ -60,12 +61,12 @@ enum CheckinStatus {
   Color get color {
     switch (this) {
       case CheckinStatus.normal:
-        return Colors.green; // 正常-绿色
+        return AppColors.success; // 正常-绿色
       case CheckinStatus.pending:
         return Colors.blue; // 待审核-蓝色
       case CheckinStatus.late:
       case CheckinStatus.leaveEarly:
-        return Colors.orange; // 迟到/早退-橙色
+        return AppColors.warning; // 迟到/早退-橙色
       case CheckinStatus.abnormal:
       case CheckinStatus.rejected:
         return Colors.red; // 异常/驳回-红色

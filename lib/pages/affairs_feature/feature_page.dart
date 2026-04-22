@@ -80,7 +80,7 @@ class _PlaceholderFeaturePage extends FeaturePage {
             ),
             child: const Text(
               '功能开发中',
-              style: TextStyle(fontSize: 16, color: Colors.grey),
+              style: TextStyle(fontSize: 16, color: AppColors.grey),
             ),
           ),
           const SizedBox(height: 24),
