@@ -1,15 +1,20 @@
-import 'dart:convert';
+import 'dart:async';
 import 'dart:io';
+import 'package:dio/dio.dart';
+import 'package:dio/io.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:geolocator/geolocator.dart';
-import 'checkin_utils.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+
 import '../models/constants/checkin_enums.dart';
 import '../models/response.dart';
 import '../models/auth.dart';
 import '../models/location.dart';
 import '../models/checkin.dart';
 import '../models/approval.dart';
-import 'package:shared_preferences/shared_preferences.dart';
+import 'checkin_utils.dart';
+import 'user_manager.dart';
+import 'dio_client.dart';
 
 const _kAccessTokenKey = 'access_token';
 const _kRefreshTokenKey = 'refresh_token';
@@ -56,39 +61,162 @@ class TokenManager {
     await _prefs.remove(_kRefreshTokenKey);
     await _prefs.remove(_kAccessTokenExpiryKey);
   }
+
+  /// Dio 专用：刷新 token（使用独立 Dio 实例避免拦截器循环调用）
+  Future<bool> refreshAccessToken() async {
+    final refreshTokenVal = refreshToken;
+    if (refreshTokenVal == null || refreshTokenVal.isEmpty) return false;
+
+    // 创建独立的 Dio 实例，不使用拦截器避免循环调用
+    final refreshDio = Dio(
+      BaseOptions(
+        baseUrl: dotenv.env['API_BASE_URL'] ?? '',
+        connectTimeout: const Duration(seconds: 30),
+        receiveTimeout: const Duration(seconds: 30),
+        headers: {'Content-Type': 'application/json'},
+      ),
+    );
+
+    // 配置忽略证书错误
+    refreshDio.httpClientAdapter = IOHttpClientAdapter(
+      createHttpClient: () {
+        final client = HttpClient();
+        client.badCertificateCallback = (cert, host, port) => true;
+        return client;
+      },
+    );
+
+    try {
+      final response = await refreshDio.post(
+        '/Auth/refresh-token',
+        data: {'refreshToken': refreshTokenVal},
+      );
+
+      if (response.statusCode == 200) {
+        final jsonMap = response.data;
+        if (jsonMap['success'] == true) {
+          final data = jsonMap['data'];
+          await saveToken(
+            accessToken: data['newAccessToken'],
+            refreshToken: refreshTokenVal,
+            accessTokenExpiry: data['newAccessTokenExpiry'],
+          );
+          return true;
+        }
+      }
+      await clearToken();
+      return false;
+    } catch (e) {
+      await clearToken();
+      return false;
+    } finally {
+      refreshDio.close();
+    }
+  }
+}
+
+/// Token 拦截器：自动注入 Authorization header，处理 401 自动刷新
+class TokenInterceptor extends Interceptor {
+  final Dio dio;
+
+  TokenInterceptor(this.dio);
+
+  @override
+  void onRequest(RequestOptions options, RequestInterceptorHandler handler) {
+    // 登录接口不需要 token
+    if (options.path.contains('/Auth/login')) {
+      return handler.next(options);
+    }
+
+    // 自动注入 token
+    final accessToken = tokenManager.accessToken;
+    if (accessToken != null && accessToken.isNotEmpty) {
+      options.headers['Authorization'] = 'Bearer $accessToken';
+    }
+    handler.next(options);
+  }
+
+  @override
+  void onError(DioException err, ErrorInterceptorHandler handler) async {
+    // 仅处理 401 错误
+    if (err.response?.statusCode != 401) {
+      return handler.next(err);
+    }
+
+    // 防止刷新死循环：记录是否正在刷新
+    if (_isRefreshing) {
+      // 等待刷新完成
+      await _refreshCompleter?.future;
+      if (_refreshSuccess) {
+        // 重试原请求
+        final retryResponse = await dio.fetch(err.requestOptions);
+        return handler.resolve(retryResponse);
+      }
+      return handler.next(err);
+    }
+
+    _isRefreshing = true;
+    _refreshCompleter = Completer<bool>();
+
+    try {
+      final refreshed = await tokenManager.refreshAccessToken();
+      _refreshSuccess = refreshed;
+      if (refreshed) {
+        // 重试原请求
+        final retryResponse = await dio.fetch(err.requestOptions);
+        _refreshCompleter?.complete(true);
+        _refreshCompleter = null;
+        _isRefreshing = false;
+        return handler.resolve(retryResponse);
+      }
+    } catch (e) {
+      _refreshSuccess = false;
+    } finally {
+      if (!_refreshCompleter!.isCompleted) {
+        _refreshCompleter?.complete(_refreshSuccess);
+      }
+      _refreshCompleter = null;
+      _isRefreshing = false;
+    }
+
+    // 刷新失败，清除用户信息，要求重新登录
+    if (!_refreshSuccess) {
+      userManager.clearUserInfo();
+    }
+
+    handler.next(err);
+  }
+
+  bool _isRefreshing = false;
+  bool _refreshSuccess = false;
+  Completer<bool>? _refreshCompleter;
 }
 
 // --------------- 全局实例 ---------------
 final TokenManager tokenManager = TokenManager();
 final ApiClient apiClient = ApiClient();
 
+/// 初始化 Token 拦截器，应在 main() 中调用
+void setupTokenInterceptor() {
+  dioClient.dio.interceptors.add(TokenInterceptor(dioClient.dio));
+}
+
+// --------------- ApiClient ---------------
+
 class ApiClient {
   static String get baseUrl => dotenv.env['API_BASE_URL'] ?? '';
-  static final HttpClient _client = HttpClient()
-    ..badCertificateCallback = (cert, host, port) => true;
 
   Future<QuQResponse<LoginResponseModel>> login({
     required String account,
     required String password,
   }) async {
     try {
-      final uri = Uri.parse('$baseUrl/Auth/login');
-      final request = await _client.postUrl(uri);
-      request.headers.add('Content-Type', 'application/json');
-      final requestBody = json.encode({'phone': account, 'password': password});
-      request.write(requestBody);
-      final response = await request.close();
-      final responseBody = await utf8.decodeStream(response);
-      final jsonMap = json.decode(responseBody);
-      // if (response.statusCode != HttpStatus.ok) {
-      //   return QuQResponse<LoginResponseModel>(
-      //     success: jsonMap['success'],
-      //     data: null,
-      //     message: jsonMap['message'],
-      //   );
-      // }
+      final response = await dioClient.dio.post(
+        '/Auth/login',
+        data: {'phone': account, 'password': password},
+      );
       return QuQResponse.fromJson(
-        jsonMap,
+        response.data,
         (json) => LoginResponseModel.fromJson(json),
       );
     } catch (e) {
@@ -102,67 +230,22 @@ class ApiClient {
 
   Future<bool> logout() async {
     try {
-      final uri = Uri.parse('$baseUrl/Auth/logout');
-      final request = await _client.postUrl(uri);
-      request.headers.add('Content-Type', 'application/json');
-      final refreshToken = tokenManager.refreshToken;
-      final requestBody = json.encode({
-        'refreshToken': refreshToken ?? "no-refreshToken",
-      });
-      request.write(requestBody);
-      final response = await request.close();
-      if (response.statusCode == 200) return true;
-      return false;
-    } catch (e) {
-      return false;
-    }
-  }
-
-  Future<bool> _refreshToken() async {
-    final refreshToken = tokenManager.refreshToken;
-    if (refreshToken == null || refreshToken.isEmpty) return false;
-    try {
-      final uri = Uri.parse('$baseUrl/Auth/refresh-token');
-      final request = await _client.postUrl(uri);
-      request.headers.add('Content-Type', 'application/json');
-      final requestBody = json.encode({'refreshToken': refreshToken});
-      request.write(requestBody);
-      final response = await request.close();
-      final responseBody = await utf8.decodeStream(response);
-      final jsonMap = json.decode(responseBody);
-      final apiResponse = QuQResponse.fromJson(
-        jsonMap,
-        (json) => RefreshTokenResponseModel.fromJson(json),
+      final response = await dioClient.dio.post(
+        '/Auth/logout',
+        data: {'refreshToken': tokenManager.refreshToken ?? "no-refreshToken"},
       );
-      if (apiResponse.success) {
-        final refreshData = apiResponse.data!;
-        await tokenManager.saveToken(
-          accessToken: refreshData.newAccessToken,
-          refreshToken: tokenManager.refreshToken!,
-          accessTokenExpiry: refreshData.newAccessTokenExpiry,
-        );
-        return true;
-      } else {
-        await tokenManager.clearToken();
-        return false;
-      }
+      return response.statusCode == 200;
     } catch (e) {
       return false;
     }
   }
 
-  // 获取服务器当前毫秒时间戳，避免客户端改时间作弊。虽然改了也没用
+  // 获取服务器当前毫秒时间戳
   Future<QuQResponse<Map<String, dynamic>>> getServerTime() async {
     try {
-      final uri = Uri.parse('$baseUrl/Common/current-time');
-      final request = await _client.getUrl(uri);
-      //request.headers.add('Content-Type', 'application/json');
-      final response = await request.close();
-      if (response.statusCode == 500) throw Exception('服务器内部错误');
-      final responseBody = await utf8.decodeStream(response);
-      final jsonMap = json.decode(responseBody);
+      final response = await dioClient.dio.get('/Common/current-time');
       return QuQResponse.fromJson(
-        jsonMap,
+        response.data,
         (json) => json as Map<String, dynamic>,
       );
     } catch (e) {
@@ -175,43 +258,24 @@ class ApiClient {
   }
 
   Future<QuQResponse<LocationModel>> getLocation() async {
-    if (tokenManager.isAccessTokenExpired() &&
-        tokenManager.refreshToken != null) {
-      final refreshSuccess = await _refreshToken();
-      if (!refreshSuccess) {
+    try {
+      final response = await dioClient.dio.get('/Checkin/locations');
+      return QuQResponse.fromJson(
+        response.data,
+        (json) => LocationModel.fromJson(json),
+      );
+    } on DioException catch (e) {
+      if (e.response?.statusCode == 401) {
         return QuQResponse<LocationModel>(
           success: false,
           data: null,
           message: '登录已过期，请重新登录',
         );
       }
-    }
-    try {
-      final uri = Uri.parse('$baseUrl/Checkin/locations');
-      final request = await _client.getUrl(uri);
-      final accessToken = tokenManager.accessToken;
-      if (accessToken != null && accessToken.isNotEmpty) {
-        request.headers.add('Authorization', 'Bearer $accessToken');
-      }
-      request.headers.add('Content-Type', 'application/json');
-      final response = await request.close();
-      if (response.statusCode == HttpStatus.unauthorized) {
-        final refreshSuccess = await _refreshToken();
-        if (refreshSuccess) {
-          return getLocation();
-        } else {
-          return QuQResponse<LocationModel>(
-            success: false,
-            data: null,
-            message: '登录已过期，请重新登录',
-          );
-        }
-      }
-      final responseBody = await utf8.decodeStream(response);
-      final jsonMap = json.decode(responseBody);
-      return QuQResponse.fromJson(
-        jsonMap,
-        (json) => LocationModel.fromJson(json),
+      return QuQResponse<LocationModel>(
+        success: false,
+        data: null,
+        message: '请求失败:${e.toString()}',
       );
     } catch (e) {
       return QuQResponse<LocationModel>(
@@ -223,47 +287,28 @@ class ApiClient {
   }
 
   Future<QuQResponse<List<CheckinRecordDto>>> getCheckinStatus() async {
-    if (tokenManager.isAccessTokenExpired() &&
-        tokenManager.refreshToken != null) {
-      final refreshSuccess = await _refreshToken();
-      if (!refreshSuccess) {
+    try {
+      final response = await dioClient.dio.get('/Checkin/today-status');
+      return QuQResponse.fromJson(
+        response.data,
+        (json) => (json as List<dynamic>)
+            .map(
+              (item) => CheckinRecordDto.fromJson(item as Map<String, dynamic>),
+            )
+            .toList(),
+      );
+    } on DioException catch (e) {
+      if (e.response?.statusCode == 401) {
         return QuQResponse<List<CheckinRecordDto>>(
           success: false,
           data: null,
           message: '登录已过期，请重新登录',
         );
       }
-    }
-    try {
-      final uri = Uri.parse('$baseUrl/Checkin/today-status');
-      final request = await _client.getUrl(uri);
-      final accessToken = tokenManager.accessToken;
-      if (accessToken != null && accessToken.isNotEmpty) {
-        request.headers.add('Authorization', 'Bearer $accessToken');
-      }
-      request.headers.add('Content-Type', 'application/json');
-      final response = await request.close();
-      if (response.statusCode == HttpStatus.unauthorized) {
-        final refreshSuccess = await _refreshToken();
-        if (refreshSuccess) {
-          return getCheckinStatus();
-        } else {
-          return QuQResponse<List<CheckinRecordDto>>(
-            success: false,
-            data: null,
-            message: '登录已过期，请重新登录',
-          );
-        }
-      }
-      final responseBody = await utf8.decodeStream(response);
-      final jsonMap = json.decode(responseBody);
-      return QuQResponse.fromJson(
-        jsonMap,
-        (json) => (json as List<dynamic>)
-            .map(
-              (item) => CheckinRecordDto.fromJson(item as Map<String, dynamic>),
-            )
-            .toList(),
+      return QuQResponse<List<CheckinRecordDto>>(
+        success: false,
+        data: null,
+        message: '获取今日打卡记录失败:${e.toString()}',
       );
     } catch (e) {
       return QuQResponse<List<CheckinRecordDto>>(
@@ -278,48 +323,30 @@ class ApiClient {
     DateTime startDate,
     DateTime endDate,
   ) async {
-    if (tokenManager.isAccessTokenExpired() &&
-        tokenManager.refreshToken != null) {
-      final refreshSuccess = await _refreshToken();
-      if (!refreshSuccess) {
+    try {
+      final response = await dioClient.dio.post(
+        '/Checkin/checkin-info',
+        data: {
+          "startDate": startDate.toIso8601String(),
+          "endDate": endDate.toIso8601String(),
+        },
+      );
+      return QuQResponse.fromJson(
+        response.data,
+        (json) => MonthlyAttendance.fromJson(json),
+      );
+    } on DioException catch (e) {
+      if (e.response?.statusCode == 401) {
         return QuQResponse<MonthlyAttendance>(
           success: false,
           data: null,
           message: '登录已过期，请重新登录',
         );
       }
-    }
-    try {
-      final uri = Uri.parse('$baseUrl/Checkin/checkin-info');
-      final request = await _client.postUrl(uri);
-      final accessToken = tokenManager.accessToken;
-      if (accessToken != null && accessToken.isNotEmpty) {
-        request.headers.add('Authorization', 'Bearer $accessToken');
-      }
-      request.headers.add('Content-Type', 'application/json');
-      final requestBody = json.encode({
-        "startDate": startDate.toIso8601String(),
-        "endDate": endDate.toIso8601String(),
-      });
-      request.write(requestBody);
-      final response = await request.close();
-      if (response.statusCode == HttpStatus.unauthorized) {
-        final refreshSuccess = await _refreshToken();
-        if (refreshSuccess) {
-          return getMonthlyCheckin(startDate, endDate);
-        } else {
-          return QuQResponse<MonthlyAttendance>(
-            success: false,
-            data: null,
-            message: '登录已过期，请重新登录',
-          );
-        }
-      }
-      final responseBody = await utf8.decodeStream(response);
-      final jsonMap = json.decode(responseBody);
-      return QuQResponse.fromJson(
-        jsonMap,
-        (json) => MonthlyAttendance.fromJson(json),
+      return QuQResponse<MonthlyAttendance>(
+        success: false,
+        data: null,
+        message: '获取打卡记录失败:${e.toString()}',
       );
     } catch (e) {
       return QuQResponse<MonthlyAttendance>(
@@ -334,59 +361,39 @@ class ApiClient {
     CheckinType checkinType,
     Position position,
   ) async {
-    if (tokenManager.isAccessTokenExpired() &&
-        tokenManager.refreshToken != null) {
-      final refreshSuccess = await _refreshToken();
-      if (!refreshSuccess) {
+    try {
+      final devInfo = await CheckinUtils.getDevInfoJson();
+      final response = await dioClient.dio.post(
+        '/Checkin/perform-checkin',
+        data: {
+          "checkinType": checkinType.value,
+          "longitude": position.longitude,
+          "latitude": position.latitude,
+          "accuracy": position.accuracy,
+          "altitude": position.altitude,
+          "heading": position.heading,
+          "speed": position.speed,
+          "source": 1,
+          "deviceInfo": devInfo,
+          "networkType": "not defined",
+        },
+      );
+      return QuQResponse.fromJson(
+        response.data,
+        (json) => CheckinRecordDto.fromJson(json),
+      );
+    } on DioException catch (e) {
+      if (e.response?.statusCode == 401) {
         return QuQResponse<CheckinRecordDto>(
           success: false,
           data: null,
           message: '登录已过期，请重新登录',
         );
       }
-    }
-    try {
-      final uri = Uri.parse('$baseUrl/Checkin/perform-checkin');
-      final request = await _client.postUrl(uri);
-      final accessToken = tokenManager.accessToken;
-      if (accessToken != null && accessToken.isNotEmpty) {
-        request.headers.add('Authorization', 'Bearer $accessToken');
-      }
-      request.headers.add('Content-Type', 'application/json');
-      final devInfo = await CheckinUtils.getDevInfoJson();
-      final requestBody = json.encode({
-        "checkinType": checkinType.value,
-        "longitude": position.longitude,
-        "latitude": position.latitude,
-        "accuracy": position.accuracy,
-        "altitude": position.altitude,
-        "heading": position.heading,
-        "speed": position.speed,
-        "source": 1,
-        "deviceInfo": devInfo,
-        "networkType": "not defined",
-      });
-      // request.write(requestBody);
-      final bodyBtyes = utf8.encode(requestBody);
-      request.add(bodyBtyes);
-      final response = await request.close();
-      if (response.statusCode == HttpStatus.unauthorized) {
-        final refreshSuccess = await _refreshToken();
-        if (refreshSuccess) {
-          return performCheckin(checkinType, position);
-        } else {
-          return QuQResponse<CheckinRecordDto>(
-            success: false,
-            data: null,
-            message: '登录已过期，请重新登录',
-          );
-        }
-      }
-      final responseBody = await utf8.decodeStream(response);
-      final jsonMap = json.decode(responseBody);
-      return QuQResponse.fromJson(
-        jsonMap,
-        (json) => CheckinRecordDto.fromJson(json),
+      return QuQResponse<CheckinRecordDto>(
+        success: false,
+        data: null,
+        message: '请求失败:${e.toString()}',
       );
     } catch (e) {
       return QuQResponse<CheckinRecordDto>(
@@ -400,47 +407,29 @@ class ApiClient {
   Future<QuQResponse<String>> submitApproval(
     SubmitApprovalRequest submitRequest,
   ) async {
-    if (tokenManager.isAccessTokenExpired() &&
-        tokenManager.refreshToken != null) {
-      final refreshSuccess = await _refreshToken();
-      if (!refreshSuccess) {
+    try {
+      final response = await dioClient.dio.post(
+        '/Approval/submit',
+        data: submitRequest,
+      );
+      final jsonMap = response.data;
+      return QuQResponse<String>(
+        success: jsonMap['success'] ?? false,
+        message: jsonMap['message'] ?? '',
+        data: jsonMap['data'] ?? '',
+      );
+    } on DioException catch (e) {
+      if (e.response?.statusCode == 401) {
         return QuQResponse<String>(
           success: false,
           data: null,
           message: '登录已过期，请重新登录',
         );
       }
-    }
-    try {
-      final uri = Uri.parse('$baseUrl/Approval/submit');
-      final request = await _client.postUrl(uri);
-      final accessToken = tokenManager.accessToken;
-      if (accessToken != null && accessToken.isNotEmpty) {
-        request.headers.add('Authorization', 'Bearer $accessToken');
-      }
-      request.headers.add('Content-Type', 'application/json');
-      final requestBody = json.encode(submitRequest);
-      final bodyBtyes = utf8.encode(requestBody);
-      request.add(bodyBtyes);
-      final response = await request.close();
-      if (response.statusCode == HttpStatus.unauthorized) {
-        final refreshSuccess = await _refreshToken();
-        if (refreshSuccess) {
-          return submitApproval(submitRequest);
-        } else {
-          return QuQResponse<String>(
-            success: false,
-            data: null,
-            message: '登录已过期，请重新登录',
-          );
-        }
-      }
-      final responseBody = await utf8.decodeStream(response);
-      final jsonMap = json.decode(responseBody);
       return QuQResponse<String>(
-        success: jsonMap['success'] ?? false,
-        message: jsonMap['message'] ?? '',
-        data: jsonMap['data'] ?? '',
+        success: false,
+        data: null,
+        message: '请求失败:${e.toString()}',
       );
     } catch (e) {
       return QuQResponse<String>(

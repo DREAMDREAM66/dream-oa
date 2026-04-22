@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'pages/home_page.dart';
 import 'utils/api_client.dart';
+import 'utils/dio_client.dart';
 import 'utils/user_manager.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
@@ -8,6 +9,11 @@ import 'package:flutter_localizations/flutter_localizations.dart';
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await dotenv.load(fileName: ".env");
+
+  // 初始化 Dio
+  dioClient.init();
+  setupTokenInterceptor();
+
   await tokenManager.init();
   await userManager.loadUserInfo();
   runApp(const MyApp());

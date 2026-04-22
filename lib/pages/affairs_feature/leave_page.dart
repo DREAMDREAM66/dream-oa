@@ -739,58 +739,66 @@ class _LeavePageContentState extends State<LeavePageContent> {
 
     return GestureDetector(
       onTap: isLoading ? null : onTap,
-      child: Container(
-        height: 54,
-        decoration: BoxDecoration(
-          color: baseColor,
-          borderRadius: BorderRadius.circular(16),
-          boxShadow: isSecondary
-              ? [
-                  BoxShadow(
-                    color: Colors.white,
-                    offset: const Offset(-3, -3),
-                    blurRadius: 6,
-                  ),
-                  BoxShadow(
-                    color: Colors.black.withAlpha(15),
-                    offset: const Offset(3, 3),
-                    blurRadius: 8,
-                  ),
-                ]
-              : [
-                  BoxShadow(
-                    color: AppColors.primary.withAlpha(80),
-                    offset: const Offset(0, 4),
-                    blurRadius: 12,
+      // Stack可以让组件叠起来
+      child: Stack(
+        fit: StackFit.passthrough,
+        children: [
+          Container(
+            height: 54,
+            decoration: BoxDecoration(
+              color: baseColor,
+              borderRadius: BorderRadius.circular(16),
+              boxShadow: isSecondary
+                  ? [
+                      BoxShadow(
+                        color: Colors.white,
+                        offset: const Offset(-3, -3),
+                        blurRadius: 6,
+                      ),
+                      BoxShadow(
+                        color: Colors.black.withAlpha(15),
+                        offset: const Offset(3, 3),
+                        blurRadius: 8,
+                      ),
+                    ]
+                  : [
+                      BoxShadow(
+                        color: AppColors.primary.withAlpha(80),
+                        offset: const Offset(0, 4),
+                        blurRadius: 12,
+                      ),
+                    ],
+            ),
+            child: Center(
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Icon(icon, size: 18, color: iconColor),
+                  const SizedBox(width: 8),
+                  Text(
+                    label,
+                    style: TextStyle(
+                      fontSize: 15,
+                      fontWeight: FontWeight.w600,
+                      color: textColor,
+                    ),
                   ),
                 ],
-        ),
-        child: Center(
-          child: isLoading
-              ? SizedBox(
-                  width: 22,
-                  height: 22,
-                  child: CircularProgressIndicator(
-                    strokeWidth: 2.5,
-                    valueColor: AlwaysStoppedAnimation(textColor),
-                  ),
-                )
-              : Row(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    Icon(icon, size: 18, color: iconColor),
-                    const SizedBox(width: 8),
-                    Text(
-                      label,
-                      style: TextStyle(
-                        fontSize: 15,
-                        fontWeight: FontWeight.w600,
-                        color: textColor,
-                      ),
-                    ),
-                  ],
+              ),
+            ),
+          ),
+          if (isLoading)
+            // 不拦截点击，只是视觉
+            IgnorePointer(
+              child: Container(
+                height: 54,
+                decoration: BoxDecoration(
+                  color: Colors.grey.withAlpha(80),
+                  borderRadius: BorderRadius.circular(16),
                 ),
-        ),
+              ),
+            ),
+        ],
       ),
     );
   }

@@ -22,6 +22,8 @@ cn 简体中文 | us [English](README_EN.md)
   <img src="screenshots/leave.jpg" width="28%" alt="请假页" />
 </div>
 
+<small>⚠️ 截图展示的 UI 样式可能不代表最新版本，实际界面以项目代码为准。</small>
+
 
 ## 核心功能
 
@@ -38,7 +40,7 @@ cn 简体中文 | us [English](README_EN.md)
 
 - **Framework**: Flutter 3.35.5 (Dart 3.9.2)
 - **State Management**: Built-in setState
-- **Network**: Dart HttpClient
+- **Network**: Dio 5.9.2
 - **Local Storage**: SharedPreferences
 - **UI Components**: [日历组件：flutter_calendar_carousel](https://github.com/hyochan/flutter_calendar_carousel)
 
