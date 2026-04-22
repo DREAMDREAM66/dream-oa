@@ -38,7 +38,7 @@ The project is currently in its early stages. Implemented features include:
 
 - **Framework**: Flutter 3.35.5 (Dart 3.9.2)
 - **State Management**: Built-in setState
-- **Network**: Dart HttpClient
+- **Network**: Dio 5.4.0
 - **Local Storage**: SharedPreferences
 - **UI Components**: [Calendar: flutter_calendar_carousel](https://github.com/hyochan/flutter_calendar_carousel)
 

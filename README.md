@@ -38,7 +38,7 @@ cn 简体中文 | us [English](README_EN.md)
 
 - **Framework**: Flutter 3.35.5 (Dart 3.9.2)
 - **State Management**: Built-in setState
-- **Network**: Dart HttpClient
+- **Network**: Dio 5.4.0
 - **Local Storage**: SharedPreferences
 - **UI Components**: [日历组件：flutter_calendar_carousel](https://github.com/hyochan/flutter_calendar_carousel)
 

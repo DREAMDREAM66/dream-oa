@@ -47,6 +47,7 @@ dependencies:
   flutter_launcher_icons: ^0.13.1 # logo插件
   device_info_plus: ^10.1.0 # 获取设备型号/系统信息
   flutter_calendar_carousel: ^2.5.4 # 日历插件
+  dio: ^5.4.0 # HTTP 客户端
 
 dev_dependencies:
   flutter_test:

@@ -18,7 +18,7 @@ class _MinePageState extends State<MinePage> {
   bool _isLoading = false;
   String _errorMsg = '';
   bool get _isLoggedIn =>
-      !tokenManager.isAccessTokenExpired() && tokenManager.accessToken != null;
+      userManager.username != null && userManager.username!.isNotEmpty;
 
   @override
   void initState() {
