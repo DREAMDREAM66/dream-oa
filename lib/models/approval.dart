@@ -12,10 +12,10 @@ class SubmitApprovalRequest {
   });
 
   Map<String, dynamic> toJson() => {
-        'processCode': processCode.value,
-        'title': title,
-        'content': content,
-      };
+    'processCode': processCode.value,
+    'title': title,
+    'content': content,
+  };
 }
 
 class ApprovalActionRequest {
@@ -52,14 +52,15 @@ class ApproverDetailResponse {
   });
 
   factory ApproverDetailResponse.fromJson(Map<String, dynamic> json) {
-    final DateTime time = DateTime.parse(json['actionAt']);
     return ApproverDetailResponse(
       approverId: json['approverId'] ?? 0,
       approverName: json['approverName'] ?? '',
       approverTitle: json['approverTitle'],
-      status: json['status'] ?? '',
+      status: NodeStatus.fromInt(json['status'] ?? 0),
       comment: json['comment'],
-      actionAt: time,
+      actionAt: json['actionAt'] != null
+          ? DateTime.parse(json['actionAt'])
+          : null,
     );
   }
 }
@@ -88,22 +89,24 @@ class NodeInstanceDetailResponse {
   });
 
   factory NodeInstanceDetailResponse.fromJson(Map<String, dynamic> json) {
-    final DateTime aAt = DateTime.parse(json['activateAt']);
-    final DateTime cAt = DateTime.parse(json['completedAt']);
-    final List<dynamic> dataList = json['approvers'] ?? [];
-    final List<ApproverDetailResponse> approversList = dataList
-        .map((a) => ApproverDetailResponse.fromJson(a))
-        .toList();
     return NodeInstanceDetailResponse(
       nodeInstanceId: json['nodeInstanceId'] ?? '',
       nodeOrder: json['nodeOrder'] ?? 0,
       nodeName: json['nodeName'] ?? '',
-      nodeType: json['nodeType'] ?? '',
-      status: json['status'] ?? '',
+      nodeType: ApprovalNodeType.fromInt(json['nodeType'] ?? -1),
+      status: NodeStatus.fromInt(json['status'] ?? 0),
       statusText: json['statusText'] ?? '',
-      activateAt: aAt,
-      completedAt: cAt,
-      approvers: approversList,
+      activateAt: json['activatedAt'] != null
+          ? DateTime.parse(json['activatedAt'])
+          : null,
+      completedAt: json['completedAt'] != null
+          ? DateTime.parse(json['completedAt'])
+          : null,
+      approvers:
+          (json['approvers'] as List<dynamic>?)
+              ?.map((a) => ApproverDetailResponse.fromJson(a))
+              .toList() ??
+          [],
     );
   }
 }
@@ -112,6 +115,7 @@ class ApprovalProcessDetailResponse {
   final String processInstanceId;
   final String title;
   final String? content;
+  final CategoryCode categoryCode;
   final ProcessStatus status;
   final String statusText;
   final String applicantName;
@@ -124,6 +128,7 @@ class ApprovalProcessDetailResponse {
     required this.processInstanceId,
     required this.title,
     this.content,
+    required this.categoryCode,
     required this.status,
     required this.statusText,
     required this.applicantName,
@@ -134,22 +139,26 @@ class ApprovalProcessDetailResponse {
   });
 
   factory ApprovalProcessDetailResponse.fromJson(Map<String, dynamic> json) {
-    final createdTime = DateTime.parse(json['createdAt']);
-    final completedTime = DateTime.parse(json['completedAt']);
-    final List<dynamic> dataList = json['nodes'] ?? [];
-    final List<NodeInstanceDetailResponse> nodesList = dataList
-        .map((a) => NodeInstanceDetailResponse.fromJson(a))
-        .toList();
     return ApprovalProcessDetailResponse(
       processInstanceId: json['processInstanceId'] ?? '',
       title: json['title'] ?? '',
-      status: json['status'] ?? '',
+      content: json['content'],
+      categoryCode: CategoryCode.fromInt(json['categoryCode'] ?? 0),
+      status: ProcessStatus.fromInt(json['status'] ?? 0),
       statusText: json['statusText'] ?? '',
       applicantName: json['applicantName'] ?? '',
       applicantDepartment: json['applicantDepartment'],
-      createdAt: createdTime,
-      completedAt: completedTime,
-      nodes: nodesList,
+      createdAt: json['createdAt'] != null
+          ? DateTime.parse(json['createdAt'])
+          : DateTime.now(),
+      completedAt: json['completedAt'] != null
+          ? DateTime.parse(json['completedAt'])
+          : null,
+      nodes:
+          (json['nodes'] as List<dynamic>?)
+              ?.map((a) => NodeInstanceDetailResponse.fromJson(a))
+              .toList() ??
+          [],
     );
   }
 }
@@ -171,9 +180,18 @@ class LeaveRequest {
   });
 
   Map<String, dynamic> toJson() => {
-        'startTime': startTime.toIso8601String(),
-        'endTime': endTime.toIso8601String(),
-        'reason': reason,
-        'type': type.value,
-      };
+    'startTime': startTime.toIso8601String(),
+    'endTime': endTime.toIso8601String(),
+    'reason': reason,
+    'type': type.value,
+  };
+
+  factory LeaveRequest.fromJson(Map<String, dynamic> json) {
+    return LeaveRequest(
+      startTime: DateTime.parse(json['startTime']),
+      endTime: DateTime.parse(json['endTime']),
+      reason: json['reason'] ?? '',
+      type: LeaveType.fromInt(json['type'] ?? 0),
+    );
+  }
 }

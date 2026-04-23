@@ -2,33 +2,33 @@ import 'package:flutter/material.dart';
 import '../models/constants/app_colors.dart';
 import 'checkin_page.dart';
 import 'affairs_page.dart';
+import 'my_approval_page.dart';
 
 class ToolPage extends StatelessWidget {
   const ToolPage({super.key});
 
   // 后续需要动态加载功能，需要改为StatefulWidget
-  // List<ToolFunctionModel> _functionList = [
-  //   ToolFunctionModel(
-  //     functionKey: 'check_in',
-  //     title: '打卡',
-  //     iconName: 'access_time',
-  //     isEnabled: true,
-  //   ),
-  //   ToolFunctionModel(
-  //     functionKey: 'affairs',
-  //     title: '事务',
-  //     iconName: 'description',
-  //     isEnabled: true,
-  //   ),
-  // ];通过后端接受这样一个列表
-  //
-  // children: _functionList
-  //                 .map((model) => ToolItem(
-  //                       icon: _getIconFromName(model.iconName),
-  //                       title: model.title,
-  //                       functionKey: model.functionKey,
-  //                     ))
-  //                 .toList(),动态生成
+  static const List<ToolFunctionModel> _functionList = [
+    ToolFunctionModel(
+      functionKey: 'check_in',
+      title: '打卡',
+      icon: Icons.access_time,
+      isEnabled: true,
+    ),
+    ToolFunctionModel(
+      functionKey: 'affairs',
+      title: '事务',
+      icon: Icons.description,
+      isEnabled: true,
+    ),
+    ToolFunctionModel(
+      functionKey: 'my-approval',
+      title: '审批',
+      icon: Icons.checklist,
+      isEnabled: true,
+    ),
+  ];
+  // 通过后端接受这样一个列表
 
   @override
   Widget build(BuildContext context) {
@@ -47,18 +47,15 @@ class ToolPage extends StatelessWidget {
         mainAxisSpacing: 16,
         padding: const EdgeInsets.all(24),
         childAspectRatio: 1.0,
-        children: const [
-          ToolItem(
-            icon: Icons.access_time,
-            title: '打卡',
-            functionKey: 'check_in',
-          ),
-          ToolItem(
-            icon: Icons.description,
-            title: '事务',
-            functionKey: 'affairs',
-          ),
-        ],
+        children: _functionList
+            .map(
+              (item) => ToolItem(
+                icon: item.icon,
+                title: item.title,
+                functionKey: item.functionKey,
+              ),
+            )
+            .toList(),
       ),
     );
   }
@@ -119,6 +116,12 @@ class ToolItem extends StatelessWidget {
           MaterialPageRoute(builder: (context) => const AffairsPage()),
         );
         break;
+      case 'my-approval':
+        Navigator.push(
+          context,
+          MaterialPageRoute(builder: (context) => const MyApprovalPage()),
+        );
+        break;
       default:
         ScaffoldMessenger.of(
           context,
@@ -126,4 +129,18 @@ class ToolItem extends StatelessWidget {
         break;
     }
   }
+}
+
+class ToolFunctionModel {
+  final String functionKey;
+  final String title;
+  final IconData icon;
+  final bool isEnabled;
+
+  const ToolFunctionModel({
+    required this.functionKey,
+    required this.title,
+    required this.icon,
+    required this.isEnabled,
+  });
 }

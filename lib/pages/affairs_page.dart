@@ -107,7 +107,11 @@ class _AffairsPageState extends State<AffairsPage> {
                       )
                     : IconButton(
                         onPressed: _performSearch,
-                        icon: Icon(Icons.search, size: 16, color: AppColors.grey),
+                        icon: Icon(
+                          Icons.search,
+                          size: 16,
+                          color: AppColors.grey,
+                        ),
                       ),
                 border: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(8),

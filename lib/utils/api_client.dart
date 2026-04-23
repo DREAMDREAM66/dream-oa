@@ -125,7 +125,7 @@ class TokenInterceptor extends Interceptor {
   void onRequest(RequestOptions options, RequestInterceptorHandler handler) {
     // 登录接口不需要 token
     if (options.path.contains('/Auth/login')) {
-      return handler.next(options);
+      return handler.next(options); // 拦截器放行请求
     }
 
     // 自动注入 token
@@ -156,7 +156,7 @@ class TokenInterceptor extends Interceptor {
     }
 
     _isRefreshing = true;
-    _refreshCompleter = Completer<bool>();
+    _refreshCompleter = Completer<bool>(); // 这是一个可以等待的bool，承诺完成器
 
     try {
       final refreshed = await tokenManager.refreshAccessToken();
@@ -165,7 +165,7 @@ class TokenInterceptor extends Interceptor {
         // 重试原请求
         final retryResponse = await dio.fetch(err.requestOptions);
         _refreshCompleter?.complete(true);
-        _refreshCompleter = null;
+        _refreshCompleter = null; // 显式置null，避免其他逻辑复用了旧的Completer
         _isRefreshing = false;
         return handler.resolve(retryResponse);
       }
@@ -436,6 +436,42 @@ class ApiClient {
         success: false,
         data: null,
         message: '请求失败:${e.toString()}',
+      );
+    }
+  }
+
+  Future<QuQResponse<List<ApprovalProcessDetailResponse>>>
+  getMyPendingApprovals() async {
+    try {
+      final response = await dioClient.dio.get('/Approval/pending');
+      return QuQResponse.fromJson(
+        response.data,
+        (json) => (json as List<dynamic>)
+            .map(
+              (item) => ApprovalProcessDetailResponse.fromJson(
+                item as Map<String, dynamic>,
+              ),
+            )
+            .toList(),
+      );
+    } on DioException catch (e) {
+      if (e.response?.statusCode == 401) {
+        return QuQResponse<List<ApprovalProcessDetailResponse>>(
+          success: false,
+          data: null,
+          message: '登录已过期，请重新登录',
+        );
+      }
+      return QuQResponse<List<ApprovalProcessDetailResponse>>(
+        success: false,
+        data: null,
+        message: '获取待审批列表失败:${e.toString()}',
+      );
+    } catch (e) {
+      return QuQResponse<List<ApprovalProcessDetailResponse>>(
+        success: false,
+        data: null,
+        message: '获取待审批列表失败:${e.toString()}',
       );
     }
   }

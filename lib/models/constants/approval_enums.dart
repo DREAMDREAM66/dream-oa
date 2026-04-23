@@ -6,6 +6,13 @@ enum CategoryCode {
 
   final int value;
   const CategoryCode(this.value);
+
+  static CategoryCode fromInt(int value) {
+    return CategoryCode.values.firstWhere(
+      (e) => e.value == value,
+      orElse: () => CategoryCode.leave,
+    );
+  }
 }
 
 enum ApprovalAction {
@@ -17,6 +24,13 @@ enum ApprovalAction {
 
   final int value;
   const ApprovalAction(this.value);
+
+  static ApprovalAction fromInt(int value) {
+    return ApprovalAction.values.firstWhere(
+      (e) => e.value == value,
+      orElse: () => ApprovalAction.submit,
+    );
+  }
 }
 
 enum ApprovalNodeType {
@@ -26,6 +40,13 @@ enum ApprovalNodeType {
 
   final int value;
   const ApprovalNodeType(this.value);
+
+  static ApprovalNodeType fromInt(int value) {
+    return ApprovalNodeType.values.firstWhere(
+      (e) => e.value == value,
+      orElse: () => ApprovalNodeType.single,
+    );
+  }
 }
 
 enum ProcessStatus {
@@ -36,6 +57,13 @@ enum ProcessStatus {
 
   final int value;
   const ProcessStatus(this.value);
+
+  static ProcessStatus fromInt(int value) {
+    return ProcessStatus.values.firstWhere(
+      (e) => e.value == value,
+      orElse: () => ProcessStatus.pending,
+    );
+  }
 }
 
 enum NodeStatus {
@@ -47,6 +75,13 @@ enum NodeStatus {
 
   final int value;
   const NodeStatus(this.value);
+
+  static NodeStatus fromInt(int value) {
+    return NodeStatus.values.firstWhere(
+      (e) => e.value == value,
+      orElse: () => NodeStatus.pending,
+    );
+  }
 }
 
 enum LeaveType {
@@ -57,4 +92,24 @@ enum LeaveType {
 
   final int value;
   const LeaveType(this.value);
+
+  static LeaveType fromInt(int value) {
+    return LeaveType.values.firstWhere(
+      (e) => e.value == value,
+      orElse: () => LeaveType.annual,
+    );
+  }
+
+  String get desc {
+    switch (this) {
+      case LeaveType.annual:
+        return '年假';
+      case LeaveType.sick:
+        return '病假';
+      case LeaveType.compensatory:
+        return '调休';
+      case LeaveType.personal:
+        return '事假';
+    }
+  }
 }

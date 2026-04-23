@@ -123,8 +123,6 @@ class _CheckInFormPageState extends State<CheckInFormPage> {
 
   int? _serverTimestamp;
   int? _timeDiff;
-  bool _timeErr = false;
-
   @override
   void initState() {
     super.initState();
@@ -140,11 +138,6 @@ class _CheckInFormPageState extends State<CheckInFormPage> {
       setState(() {
         _serverTimestamp = response.data!['timestamp'] as int;
         _timeDiff = DateTime.now().millisecondsSinceEpoch - _serverTimestamp!;
-        _timeErr = false;
-      });
-    } else {
-      setState(() {
-        _timeErr = true;
       });
     }
   }
