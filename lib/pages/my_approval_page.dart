@@ -510,6 +510,10 @@ class ApprovalDetailPage extends StatelessWidget {
         ),
       );
     }
+    final content = deserializeApprovalContent(item.categoryCode, contentMap);
+    if (content == null) {
+      return const SizedBox.shrink();
+    }
 
     return Card(
       elevation: 0,
@@ -525,14 +529,11 @@ class ApprovalDetailPage extends StatelessWidget {
               style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
             ),
             const SizedBox(height: 8),
-            ...contentMap.entries.map((entry) {
-              final displayValue = _formatContentValue(entry.key, entry.value);
+            ...content.contentRows.map((row) {
+              final displayValue = _formatContentValue(row.$2);
               return Padding(
                 padding: const EdgeInsets.symmetric(vertical: 4),
-                child: _DetailRow(
-                  label: _getContentLabel(entry.key),
-                  value: displayValue,
-                ),
+                child: _DetailRow(label: row.$1, value: displayValue),
               );
             }),
           ],
@@ -541,40 +542,10 @@ class ApprovalDetailPage extends StatelessWidget {
     );
   }
 
-  String _formatContentValue(String key, dynamic value) {
+  String _formatContentValue(dynamic value) {
     if (value == null) return '-';
-
-    if (key.contains('Time')) {
-      try {
-        final dateTime = DateTime.parse(value.toString());
-        return _formatDateTime(dateTime);
-      } catch (_) {
-        return value.toString();
-      }
-    }
-
-    if (key == 'type') {
-      if (value is int) {
-        return LeaveType.values
-            .firstWhere(
-              (e) => e.value == value,
-              orElse: () => LeaveType.personal,
-            )
-            .desc;
-      }
-    }
-
+    if (value is DateTime) return _formatDateTime(value);
     return value.toString();
-  }
-
-  String _getContentLabel(String key) {
-    const labels = {
-      'startTime': '开始时间',
-      'endTime': '结束时间',
-      'reason': '原因',
-      'type': '请假类型',
-    };
-    return labels[key] ?? key;
   }
 
   Widget _buildNodeSection() {
@@ -794,8 +765,7 @@ class _NodeCard extends StatelessWidget {
   }
 
   String _formatDateTime(DateTime dateTime) {
-    return '${dateTime.year}-${dateTime.month.toString().padLeft(2, '0')}-${dateTime.day.toString().padLeft(2, '0')} '
-        '${dateTime.hour.toString().padLeft(2, '0')}:${dateTime.minute.toString().padLeft(2, '0')}';
+    return DateFormat('yyyy-MM-dd HH:mm').format(dateTime);
   }
 }
 

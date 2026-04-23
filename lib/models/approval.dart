@@ -164,9 +164,21 @@ class ApprovalProcessDetailResponse {
 }
 
 // -----------------------------------------
+// 申请内容接口
+
+/// 审批内容的抽象接口，用于模块化渲染不同的申请类型
+abstract interface class ApprovalContent {
+  /// 获取内容区域的标题。没用到但是暂留
+  String get contentTitle;
+
+  /// 获取内容区域的行数据，每行包含 [label, value] 对
+  List<(String label, dynamic value)> get contentRows;
+}
+
+// -----------------------------------------
 // 请假
 
-class LeaveRequest {
+class LeaveRequest implements ApprovalContent {
   final DateTime startTime;
   final DateTime endTime;
   final String reason;
@@ -193,5 +205,32 @@ class LeaveRequest {
       reason: json['reason'] ?? '',
       type: LeaveType.fromInt(json['type'] ?? 0),
     );
+  }
+
+  @override
+  String get contentTitle => '请假申请';
+
+  @override
+  List<(String label, dynamic value)> get contentRows => [
+    ('请假类型', type.desc),
+    ('开始时间', startTime),
+    ('结束时间', endTime),
+    ('请假原因', reason),
+  ];
+}
+
+// -----------------------------------------
+// 内容反序列化
+
+/// 根据 CategoryCode 和 JSON 内容反序列化对应的 ApprovalContent
+ApprovalContent? deserializeApprovalContent(
+  CategoryCode code,
+  Map<String, dynamic> json,
+) {
+  switch (code) {
+    case CategoryCode.leave:
+      return LeaveRequest.fromJson(json);
+    default:
+      return null;
   }
 }
