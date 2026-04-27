@@ -440,6 +440,42 @@ class ApiClient {
     }
   }
 
+  Future<QuQResponse<String>> processApproval(
+    ApprovalActionRequest request,
+  ) async {
+    try {
+      final response = await dioClient.dio.post(
+        '/Approval/action',
+        data: request.toJson(),
+      );
+      final jsonMap = response.data;
+      return QuQResponse<String>(
+        success: jsonMap['success'] ?? false,
+        message: jsonMap['message'] ?? '',
+        data: jsonMap['data'] ?? '',
+      );
+    } on DioException catch (e) {
+      if (e.response?.statusCode == 401) {
+        return QuQResponse<String>(
+          success: false,
+          data: null,
+          message: '登录已过期，请重新登录',
+        );
+      }
+      return QuQResponse<String>(
+        success: false,
+        data: null,
+        message: '请求失败:${e.toString()}',
+      );
+    } catch (e) {
+      return QuQResponse<String>(
+        success: false,
+        data: null,
+        message: '请求失败:${e.toString()}',
+      );
+    }
+  }
+
   Future<QuQResponse<List<ApprovalProcessDetailResponse>>>
   getMyPendingApprovals() async {
     try {

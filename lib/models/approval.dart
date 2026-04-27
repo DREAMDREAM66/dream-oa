@@ -32,6 +32,14 @@ class ApprovalActionRequest {
     this.comment,
     this.delegateToUserId,
   });
+
+  Map<String, dynamic> toJson() => {
+    'processInstanceId': processInstanceId,
+    'nodeInstanceId': nodeInstanceId,
+    'action': action.value,
+    'comment': comment,
+    'delegateToUserId': delegateToUserId,
+  };
 }
 
 class ApproverDetailResponse {

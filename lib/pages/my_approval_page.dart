@@ -135,11 +135,15 @@ class _MyApprovalPageState extends State<MyApprovalPage> {
     );
   }
 
-  void _navigateToDetail(ApprovalProcessDetailResponse item) {
-    Navigator.push(
+  void _navigateToDetail(ApprovalProcessDetailResponse item) async {
+    final result = await Navigator.push<bool>(
       context,
       MaterialPageRoute(builder: (context) => ApprovalDetailPage(item: item)),
     );
+    // 如果审批操作成功，刷新列表
+    if (result == true) {
+      _loadPendingApprovals();
+    }
   }
 }
 
@@ -421,10 +425,17 @@ class _StatusBadge extends StatelessWidget {
 }
 
 /// 审批详情页
-class ApprovalDetailPage extends StatelessWidget {
+class ApprovalDetailPage extends StatefulWidget {
   final ApprovalProcessDetailResponse item;
 
   const ApprovalDetailPage({super.key, required this.item});
+
+  @override
+  State<ApprovalDetailPage> createState() => _ApprovalDetailPageState();
+}
+
+class _ApprovalDetailPageState extends State<ApprovalDetailPage> {
+  bool _isSubmitting = false;
 
   @override
   Widget build(BuildContext context) {
@@ -447,10 +458,122 @@ class ApprovalDetailPage extends StatelessWidget {
             _buildContentSection(),
             const SizedBox(height: 16),
             _buildNodeSection(),
+            const SizedBox(height: 24),
+            _buildActionButtons(),
           ],
         ),
       ),
     );
+  }
+
+  Widget _buildActionButtons() {
+    return Row(
+      children: [
+        Expanded(
+          child: ElevatedButton(
+            onPressed: () => _showApprovalBottomSheet(ApprovalAction.reject),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: Colors.red.shade50,
+              foregroundColor: Colors.red,
+              padding: const EdgeInsets.symmetric(vertical: 14),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(12),
+                side: BorderSide(color: Colors.red.shade200),
+              ),
+            ),
+            child: const Text(
+              '拒绝',
+              style: TextStyle(fontWeight: FontWeight.w600),
+            ),
+          ),
+        ),
+        const SizedBox(width: 16),
+        Expanded(
+          child: ElevatedButton(
+            onPressed: () => _showApprovalBottomSheet(ApprovalAction.approve),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: AppColors.primary,
+              foregroundColor: Colors.white,
+              padding: const EdgeInsets.symmetric(vertical: 14),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(12),
+              ),
+            ),
+            child: const Text(
+              '通过',
+              style: TextStyle(fontWeight: FontWeight.w600),
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+
+  void _showApprovalBottomSheet(ApprovalAction action) {
+    final commentController = TextEditingController();
+
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (context) => _ApprovalBottomSheet(
+        action: action,
+        commentController: commentController,
+        onSubmit: () => _handleApprovalSubmit(
+          action: action,
+          comment: commentController.text.trim(),
+        ),
+        isSubmitting: _isSubmitting,
+      ),
+    );
+  }
+
+  Future<void> _handleApprovalSubmit({
+    required ApprovalAction action,
+    required String comment,
+  }) async {
+    if (_isSubmitting) return;
+
+    // 获取当前节点ID
+    final currentNode = widget.item.nodes.firstWhere(
+      (node) =>
+          node.status == NodeStatus.pending ||
+          node.status == NodeStatus.inProgress,
+      orElse: () => widget.item.nodes.last,
+    );
+
+    setState(() => _isSubmitting = true);
+
+    final request = ApprovalActionRequest(
+      processInstanceId: widget.item.processInstanceId,
+      nodeInstanceId: currentNode.nodeInstanceId,
+      action: action,
+      comment: comment.isEmpty ? null : comment,
+    );
+
+    final response = await apiClient.processApproval(request);
+
+    if (!mounted) return;
+
+    Navigator.pop(context); // 关闭底部弹窗
+    setState(() => _isSubmitting = false);
+
+    if (response.success) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(action == ApprovalAction.approve ? '审批通过成功' : '审批已拒绝'),
+          backgroundColor: Colors.green,
+        ),
+      );
+      Navigator.pop(context, true); // 返回列表页，刷新数据
+    } else {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(response.message ?? '操作失败'),
+          backgroundColor: Colors.red,
+        ),
+      );
+    }
   }
 
   Widget _buildHeader() {
@@ -464,17 +587,23 @@ class ApprovalDetailPage extends StatelessWidget {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text(
-              item.title,
+              widget.item.title,
               style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w600),
             ),
             const SizedBox(height: 12),
-            _DetailRow(label: '申请人', value: item.applicantName),
+            _DetailRow(label: '申请人', value: widget.item.applicantName),
             const SizedBox(height: 8),
-            _DetailRow(label: '部门', value: item.applicantDepartment ?? '-'),
+            _DetailRow(
+              label: '部门',
+              value: widget.item.applicantDepartment ?? '-',
+            ),
             const SizedBox(height: 8),
-            _DetailRow(label: '状态', value: item.statusText),
+            _DetailRow(label: '状态', value: widget.item.statusText),
             const SizedBox(height: 8),
-            _DetailRow(label: '申请时间', value: _formatDateTime(item.createdAt)),
+            _DetailRow(
+              label: '申请时间',
+              value: _formatDateTime(widget.item.createdAt),
+            ),
           ],
         ),
       ),
@@ -482,13 +611,13 @@ class ApprovalDetailPage extends StatelessWidget {
   }
 
   Widget _buildContentSection() {
-    if (item.content == null || item.content!.isEmpty) {
+    if (widget.item.content == null || widget.item.content!.isEmpty) {
       return const SizedBox.shrink();
     }
 
     Map<String, dynamic>? contentMap;
     try {
-      contentMap = json.decode(item.content!) as Map<String, dynamic>;
+      contentMap = json.decode(widget.item.content!) as Map<String, dynamic>;
     } catch (_) {
       return Card(
         elevation: 0,
@@ -504,13 +633,16 @@ class ApprovalDetailPage extends StatelessWidget {
                 style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
               ),
               const SizedBox(height: 8),
-              Text(item.content!),
+              Text(widget.item.content!),
             ],
           ),
         ),
       );
     }
-    final content = deserializeApprovalContent(item.categoryCode, contentMap);
+    final content = deserializeApprovalContent(
+      widget.item.categoryCode,
+      contentMap,
+    );
     if (content == null) {
       return const SizedBox.shrink();
     }
@@ -549,7 +681,7 @@ class ApprovalDetailPage extends StatelessWidget {
   }
 
   Widget _buildNodeSection() {
-    if (item.nodes.isEmpty) return const SizedBox.shrink();
+    if (widget.item.nodes.isEmpty) return const SizedBox.shrink();
 
     return Card(
       elevation: 0,
@@ -566,13 +698,13 @@ class ApprovalDetailPage extends StatelessWidget {
             ),
             const SizedBox(height: 12),
             // ...展开列表
-            ...item.nodes.asMap().entries.map((entry) {
+            ...widget.item.nodes.asMap().entries.map((entry) {
               final index = entry.key;
               final node = entry.value;
               return _NodeCard(
                 node: node,
                 isFirst: index == 0,
-                isLast: index == item.nodes.length - 1,
+                isLast: index == widget.item.nodes.length - 1,
               );
             }),
           ],
@@ -720,12 +852,14 @@ class _NodeCard extends StatelessWidget {
           ],
           if (node.approvers.isNotEmpty) ...[
             const SizedBox(height: 6),
-            Wrap(
-              spacing: 8,
-              runSpacing: 4,
-              children: node.approvers
-                  .map(
-                    (approver) => Container(
+            ...node.approvers.map(
+              (approver) => Padding(
+                padding: const EdgeInsets.only(bottom: 4),
+                child: Row(
+                  crossAxisAlignment: CrossAxisAlignment.center,
+                  children: [
+                    // 审批人标签
+                    Container(
                       padding: const EdgeInsets.symmetric(
                         horizontal: 8,
                         vertical: 2,
@@ -742,8 +876,24 @@ class _NodeCard extends StatelessWidget {
                         ),
                       ),
                     ),
-                  )
-                  .toList(), // map返回迭代器Iterable，所以需要toList转为List<Widget>
+                    // 评论（如果有）
+                    if (approver.comment != null &&
+                        approver.comment!.isNotEmpty) ...[
+                      const SizedBox(width: 8),
+                      Expanded(
+                        child: Text(
+                          '"${approver.comment}"',
+                          style: TextStyle(
+                            fontSize: 11,
+                            color: Colors.grey.shade600,
+                            fontStyle: FontStyle.italic,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ],
+                ),
+              ),
             ),
           ],
         ],
@@ -822,5 +972,120 @@ class _NodeStatusBadge extends StatelessWidget {
       case NodeStatus.skipped:
         return (Colors.grey, Colors.grey.shade600);
     }
+  }
+}
+
+/// 审批底部弹窗
+class _ApprovalBottomSheet extends StatelessWidget {
+  final ApprovalAction action;
+  final TextEditingController commentController;
+  final VoidCallback onSubmit;
+  final bool isSubmitting;
+
+  const _ApprovalBottomSheet({
+    required this.action,
+    required this.commentController,
+    required this.onSubmit,
+    required this.isSubmitting,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final isApprove = action == ApprovalAction.approve;
+    final actionColor = isApprove ? AppColors.primary : Colors.red;
+
+    return Container(
+      padding: EdgeInsets.only(
+        bottom: MediaQuery.of(context).viewInsets.bottom,
+      ),
+      decoration: const BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      child: SafeArea(
+        child: Padding(
+          padding: const EdgeInsets.all(20),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              // 顶部指示条
+              Center(
+                child: Container(
+                  width: 40,
+                  height: 4,
+                  decoration: BoxDecoration(
+                    color: Colors.grey.shade300,
+                    borderRadius: BorderRadius.circular(2),
+                  ),
+                ),
+              ),
+              const SizedBox(height: 20),
+              // 标题
+              Text(
+                isApprove ? '通过审批' : '拒绝审批',
+                style: const TextStyle(
+                  fontSize: 18,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+              const SizedBox(height: 20),
+              // 审批意见输入框
+              TextField(
+                controller: commentController,
+                maxLines: 4,
+                decoration: InputDecoration(
+                  hintText: '请输入审批意见（选填）',
+                  hintStyle: TextStyle(color: Colors.grey.shade400),
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12),
+                    borderSide: BorderSide(color: Colors.grey.shade300),
+                  ),
+                  enabledBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12),
+                    borderSide: BorderSide(color: Colors.grey.shade300),
+                  ),
+                  focusedBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12),
+                    borderSide: BorderSide(color: actionColor),
+                  ),
+                  contentPadding: const EdgeInsets.all(16),
+                ),
+              ),
+              const SizedBox(height: 24),
+              // 提交按钮
+              ElevatedButton(
+                onPressed: isSubmitting ? null : onSubmit,
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: actionColor,
+                  foregroundColor: Colors.white,
+                  padding: const EdgeInsets.symmetric(vertical: 16),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  disabledBackgroundColor: actionColor.withAlpha(128),
+                ),
+                child: isSubmitting
+                    ? const SizedBox(
+                        width: 20,
+                        height: 20,
+                        child: CircularProgressIndicator(
+                          strokeWidth: 2,
+                          color: Colors.white,
+                        ),
+                      )
+                    : Text(
+                        '确认${isApprove ? "通过" : "拒绝"}',
+                        style: const TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
   }
 }
