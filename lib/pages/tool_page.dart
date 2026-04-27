@@ -3,6 +3,7 @@ import '../models/constants/app_colors.dart';
 import 'checkin_page.dart';
 import 'affairs_page.dart';
 import 'my_approval_page.dart';
+import 'my_application_page.dart';
 
 class ToolPage extends StatelessWidget {
   const ToolPage({super.key});
@@ -25,6 +26,12 @@ class ToolPage extends StatelessWidget {
       functionKey: 'my-approval',
       title: '审批',
       icon: Icons.checklist,
+      isEnabled: true,
+    ),
+    ToolFunctionModel(
+      functionKey: 'my-application',
+      title: '我的申请',
+      icon: Icons.assignment,
       isEnabled: true,
     ),
   ];
@@ -120,6 +127,12 @@ class ToolItem extends StatelessWidget {
         Navigator.push(
           context,
           MaterialPageRoute(builder: (context) => const MyApprovalPage()),
+        );
+        break;
+      case 'my-application':
+        Navigator.push(
+          context,
+          MaterialPageRoute(builder: (context) => const MyApplicationPage()),
         );
         break;
       default:

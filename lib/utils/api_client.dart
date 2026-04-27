@@ -511,4 +511,41 @@ class ApiClient {
       );
     }
   }
+
+  /// 获取用户提交的申请列表
+  Future<QuQResponse<List<ApprovalProcessDetailResponse>>>
+      getMyApplications() async {
+    try {
+      final response = await dioClient.dio.get('/Approval/my-applications');
+      return QuQResponse.fromJson(
+        response.data,
+        (json) => (json as List<dynamic>)
+            .map(
+              (item) => ApprovalProcessDetailResponse.fromJson(
+                item as Map<String, dynamic>,
+              ),
+            )
+            .toList(),
+      );
+    } on DioException catch (e) {
+      if (e.response?.statusCode == 401) {
+        return QuQResponse<List<ApprovalProcessDetailResponse>>(
+          success: false,
+          data: null,
+          message: '登录已过期，请重新登录',
+        );
+      }
+      return QuQResponse<List<ApprovalProcessDetailResponse>>(
+        success: false,
+        data: null,
+        message: '获取我的申请列表失败:${e.toString()}',
+      );
+    } catch (e) {
+      return QuQResponse<List<ApprovalProcessDetailResponse>>(
+        success: false,
+        data: null,
+        message: '获取我的申请列表失败:${e.toString()}',
+      );
+    }
+  }
 }
