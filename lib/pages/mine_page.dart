@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:oa_fontend/models/constants/app_colors.dart';
 import 'package:oa_fontend/models/constants/text_style.dart';
 import 'package:oa_fontend/utils/user_manager.dart';
+import 'package:oa_fontend/utils/draft_manager.dart';
 import '../../utils/api_client.dart';
 
 class MinePage extends StatefulWidget {
@@ -98,6 +99,7 @@ class _MinePageState extends State<MinePage> {
     if (!logoutSuccess) return;
     await tokenManager.clearToken();
     await userManager.clearUserInfo();
+    await draftManager.clearAllDrafts();
     if (mounted) {
       ScaffoldMessenger.of(
         context,
@@ -105,23 +107,6 @@ class _MinePageState extends State<MinePage> {
       setState(() {});
     }
   }
-
-  // String _formatUtcToLocal(String utcTimeStr) {
-  //   if (utcTimeStr.isEmpty || utcTimeStr == 'null') {
-  //     return '未知';
-  //   }
-  //   try {
-  //     DateTime utcDateTime = DateTime.parse(utcTimeStr);
-  //     DateTime localDateTime = utcDateTime.toLocal();
-  //     return "${localDateTime.year}-${_addZero(localDateTime.month)}-${_addZero(localDateTime.day)} ${_addZero(localDateTime.hour)}:${_addZero(localDateTime.minute)}:${_addZero(localDateTime.second)}";
-  //   } catch (e) {
-  //     return '格式不对吧';
-  //   }
-  // }
-
-  // String _addZero(int num) {
-  //   return num.toString().padLeft(2, '0');
-  // }
 
   Widget _buildUnloggedInWidget() {
     return Center(
