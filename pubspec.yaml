@@ -48,6 +48,9 @@ dependencies:
   device_info_plus: ^10.1.0 # 获取设备型号/系统信息
   flutter_calendar_carousel: ^2.5.4 # 日历插件
   dio: ^5.4.0 # HTTP 客户端
+  package_info_plus: ^8.0.0 # 获取 App 版本信息
+  open_filex: ^4.7.0 # 打开 APK 安装界面
+  path_provider: ^2.1.0 # 获取临时目录
 
 dev_dependencies:
   flutter_test:

@@ -4,6 +4,7 @@ import 'utils/api_client.dart';
 import 'utils/dio_client.dart';
 import 'utils/user_manager.dart';
 import 'utils/draft_manager.dart';
+import 'utils/app_update_service.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 
@@ -18,6 +19,7 @@ void main() async {
 
   await tokenManager.init();
   await userManager.loadUserInfo();
+  await appUpdateService.init();
   runApp(const MyApp());
 }
 

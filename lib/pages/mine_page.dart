@@ -1,8 +1,11 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:oa_fontend/models/constants/app_colors.dart';
 import 'package:oa_fontend/models/constants/text_style.dart';
+import 'package:oa_fontend/models/app_version.dart';
 import 'package:oa_fontend/utils/user_manager.dart';
 import 'package:oa_fontend/utils/draft_manager.dart';
+import 'package:oa_fontend/utils/app_update_service.dart';
 import '../../utils/api_client.dart';
 
 class MinePage extends StatefulWidget {
@@ -517,11 +520,14 @@ class _MinePageState extends State<MinePage> {
   }
 
   void _showAboutDialog(BuildContext context) {
+    // 显示当前版本
+    final versionName = appUpdateService.currentVersionName;
+    final versionCode = appUpdateService.currentVersionCode;
     showDialog(
       context: context,
       builder: (BuildContext context) {
         return AlertDialog(
-          title: Text('关于'),
+          title: const Text('关于'),
           content: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
@@ -532,7 +538,10 @@ class _MinePageState extends State<MinePage> {
                 style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
               ),
               const SizedBox(height: 8),
-              Text('版本 0.0.1', style: TextStyle(color: AppColors.grey600)),
+              Text(
+                '版本 $versionName ($versionCode)',
+                style: TextStyle(color: AppColors.grey600),
+              ),
               const SizedBox(height: 4),
               Text('开发人员：信息开发部', style: TextStyle(color: AppColors.grey600)),
             ],
@@ -540,8 +549,15 @@ class _MinePageState extends State<MinePage> {
           actions: [
             TextButton(
               onPressed: () => Navigator.of(context).pop(),
+              child: const Text('取消', style: TextStyle(color: AppColors.grey)),
+            ),
+            TextButton(
+              onPressed: () {
+                Navigator.of(context).pop();
+                _checkForUpdate();
+              },
               child: const Text(
-                '确定',
+                '检查更新',
                 style: TextStyle(color: AppColors.primary),
               ),
             ),
@@ -549,6 +565,135 @@ class _MinePageState extends State<MinePage> {
         );
       },
     );
+  }
+
+  /// 检查更新
+  Future<void> _checkForUpdate() async {
+    final versionInfo = await appUpdateService.checkForUpdate();
+    if (versionInfo == null) {
+      if (mounted) {
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(const SnackBar(content: Text('检查更新失败，请稍后重试')));
+      }
+      return;
+    }
+
+    // 对比版本
+    if (versionInfo.versionCode <= appUpdateService.currentVersionCode) {
+      if (mounted) {
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(const SnackBar(content: Text('已是最新版本')));
+      }
+      return;
+    }
+
+    // 有新版本，显示更新对话框
+    if (mounted) {
+      _showUpdateDialog(versionInfo);
+    }
+  }
+
+  /// 显示更新对话框
+  void _showUpdateDialog(AppVersionInfo versionInfo) {
+    showDialog(
+      context: context,
+      barrierDismissible: !versionInfo.isForceUpdate,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          title: const Text('发现新版本'),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text('版本：${versionInfo.versionName}'),
+              if (versionInfo.updateContent != null &&
+                  versionInfo.updateContent!.isNotEmpty) ...[
+                const SizedBox(height: 12),
+                const Text(
+                  '更新内容：',
+                  style: TextStyle(fontWeight: FontWeight.bold),
+                ),
+                const SizedBox(height: 4),
+                Text(versionInfo.updateContent!),
+              ],
+            ],
+          ),
+          actions: [
+            if (!versionInfo.isForceUpdate)
+              TextButton(
+                onPressed: () => Navigator.of(context).pop(),
+                child: const Text(
+                  '稍后再说',
+                  style: TextStyle(color: AppColors.grey),
+                ),
+              ),
+            TextButton(
+              onPressed: () {
+                Navigator.of(context).pop();
+                _downloadAndInstall(versionInfo);
+              },
+              child: const Text(
+                '立即更新',
+                style: TextStyle(color: AppColors.primary),
+              ),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
+  /// 下载并安装
+  Future<void> _downloadAndInstall(AppVersionInfo versionInfo) async {
+    // 先创建控制器
+    final progressController = StreamController<double>.broadcast();
+
+    // 显示下载进度
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          title: const Text('正在下载'),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              const CircularProgressIndicator(color: AppColors.primary),
+              const SizedBox(height: 16),
+              StreamBuilder<double>(
+                stream: progressController.stream,
+                builder: (context, snapshot) {
+                  final progress = snapshot.data ?? 0;
+                  return Text('${(progress * 100).toStringAsFixed(1)}%');
+                },
+              ),
+            ],
+          ),
+        );
+      },
+    );
+
+    final success = await appUpdateService.downloadAndInstall(
+      versionInfo,
+      onProgress: (received, total) {
+        if (total > 0) {
+          progressController.add(received / total);
+        }
+      },
+    );
+
+    await progressController.close();
+
+    if (mounted) {
+      Navigator.of(context).pop(); // 关闭下载进度对话框
+      if (!success) {
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(const SnackBar(content: Text('下载失败，请重试')));
+      }
+    }
   }
 
   @override
