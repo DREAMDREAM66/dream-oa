@@ -12,8 +12,8 @@ import 'package:oa_fontend/pages/affairs_feature/widget/user_info_card.dart';
 import 'package:oa_fontend/pages/affairs_feature/widget/action_button.dart';
 import 'feature_page.dart';
 
-class LeavePage extends FeaturePage {
-  const LeavePage({
+class OvertimePage extends FeaturePage {
+  const OvertimePage({
     super.key,
     required super.title,
     required super.functionKey,
@@ -21,25 +21,24 @@ class LeavePage extends FeaturePage {
 
   @override
   Widget buildContent(BuildContext context) {
-    return const LeavePageContent();
+    return const OvertimePageContent();
   }
 }
 
-class LeavePageContent extends StatefulWidget {
-  const LeavePageContent({super.key});
+class OvertimePageContent extends StatefulWidget {
+  const OvertimePageContent({super.key});
 
   @override
-  State<LeavePageContent> createState() => _LeavePageContentState();
+  State<OvertimePageContent> createState() => _OvertimePageContentState();
 }
 
-class _LeavePageContentState extends State<LeavePageContent> {
+class _OvertimePageContentState extends State<OvertimePageContent> {
   final _reasonController = TextEditingController();
 
   DateTime? _startDate;
   DateTime? _startTime;
   DateTime? _endDate;
   DateTime? _endTime;
-  LeaveType? _leaveType;
 
   bool _isSubmitting = false;
 
@@ -56,26 +55,26 @@ class _LeavePageContentState extends State<LeavePageContent> {
   }
 
   Future<void> _loadDraft() async {
-    final draft = await draftManager.loadDraft<LeaveDraft>(CategoryCode.leave);
+    final draft = await draftManager.loadDraft<OvertimeDraft>(
+      CategoryCode.overtime,
+    );
     if (draft != null && mounted) {
       setState(() {
         _startDate = draft.startDate;
         _startTime = draft.startTime;
         _endDate = draft.endDate;
         _endTime = draft.endTime;
-        _leaveType = draft.leaveType;
         _reasonController.text = draft.reason;
       });
     }
   }
 
   Future<void> _saveDraft() async {
-    final draft = LeaveDraft(
+    final draft = OvertimeDraft(
       startDate: _startDate,
       startTime: _startTime,
       endDate: _endDate,
       endTime: _endTime,
-      leaveType: _leaveType,
       reason: _reasonController.text,
     );
     await draftManager.saveDraft(draft);
@@ -119,20 +118,10 @@ class _LeavePageContentState extends State<LeavePageContent> {
       );
       return;
     }
-    if (_leaveType == null) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: const Text('请选择请假类型', style: AppTextStyle.warning),
-          behavior: SnackBarBehavior.floating,
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-        ),
-      );
-      return;
-    }
     if (_reasonController.text.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: const Text('请填写请假原因', style: AppTextStyle.warning),
+          content: const Text('请填写加班原因', style: AppTextStyle.warning),
           behavior: SnackBarBehavior.floating,
           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
         ),
@@ -159,22 +148,21 @@ class _LeavePageContentState extends State<LeavePageContent> {
       _endTime!.minute,
     );
 
-    // 构建 LeaveRequest
-    final leaveRequest = LeaveRequest(
+    // 构建 OvertimeRequest
+    final overtimeRequest = OvertimeRequest(
       startTime: startDateTime,
       endTime: endDateTime,
       reason: _reasonController.text,
-      type: _leaveType!,
     );
 
     // 序列化为 JSON 放入 content
-    final leaveRequestJson = json.encode(leaveRequest.toJson());
+    final overtimeRequestJson = json.encode(overtimeRequest.toJson());
 
     // 构建 SubmitApprovalRequest
     final submitRequest = SubmitApprovalRequest(
-      processCode: CategoryCode.leave,
-      title: '请假申请',
-      content: leaveRequestJson,
+      processCode: CategoryCode.overtime,
+      title: '加班申请',
+      content: overtimeRequestJson,
     );
 
     // 调用 API 提交
@@ -186,7 +174,7 @@ class _LeavePageContentState extends State<LeavePageContent> {
     });
 
     if (response.success) {
-      await draftManager.clearDraft(CategoryCode.leave);
+      await draftManager.clearDraft(CategoryCode.overtime);
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
@@ -226,7 +214,7 @@ class _LeavePageContentState extends State<LeavePageContent> {
                   children: [
                     const UserInfoCard(),
                     const SizedBox(height: 20),
-                    _buildLeaveFormCard(),
+                    _buildOvertimeFormCard(),
                   ],
                 ),
               ),
@@ -245,27 +233,14 @@ class _LeavePageContentState extends State<LeavePageContent> {
     );
   }
 
-  // ─── 请假表单卡片 ───────────────────────────────────────────────────────
+  // ─── 加班表单卡片 ───────────────────────────────────────────────────────
 
-  Widget _buildLeaveFormCard() {
+  Widget _buildOvertimeFormCard() {
     return CommonCard(
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          _buildSectionHeader('请假信息'),
-          const SizedBox(height: 20),
-
-          // 请假类型
-          Text(
-            '请假类型',
-            style: TextStyle(
-              fontSize: 12,
-              color: AppColors.neuTextSecondary,
-              fontWeight: FontWeight.w500,
-            ),
-          ),
-          const SizedBox(height: 8),
-          _buildLeaveTypePicker(),
+          _buildSectionHeader('加班信息'),
           const SizedBox(height: 20),
 
           // 日期时间范围
@@ -284,9 +259,9 @@ class _LeavePageContentState extends State<LeavePageContent> {
 
           const SizedBox(height: 20),
 
-          // 请假原因
+          // 加班原因
           Text(
-            '请假原因',
+            '加班原因',
             style: TextStyle(
               fontSize: 12,
               color: AppColors.neuTextSecondary,
@@ -310,91 +285,5 @@ class _LeavePageContentState extends State<LeavePageContent> {
         letterSpacing: 0.5,
       ),
     );
-  }
-
-  Future<void> _selectLeaveType() async {
-    final selected = await showDialog<LeaveType>(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('选择请假类型'),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: LeaveType.values.map((type) {
-            return ListTile(
-              title: Text(_getLeaveTypeName(type)),
-              trailing: _leaveType == type
-                  ? Icon(Icons.check, color: AppColors.primary)
-                  : null,
-              onTap: () => Navigator.pop(context, type),
-            );
-          }).toList(),
-        ),
-      ),
-    );
-    if (selected != null) {
-      setState(() => _leaveType = selected);
-    }
-  }
-
-  Widget _buildLeaveTypePicker() {
-    final hasValue = _leaveType != null;
-    return GestureDetector(
-      onTap: _selectLeaveType,
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
-        decoration: BoxDecoration(
-          color: hasValue
-              ? AppColors.primary.withAlpha(15)
-              : AppColors.neuBackground,
-          borderRadius: BorderRadius.circular(14),
-          border: Border.all(
-            color: hasValue
-                ? AppColors.primary.withAlpha(60)
-                : AppColors.neuDivider,
-            width: 1,
-          ),
-        ),
-        child: Row(
-          children: [
-            Icon(
-              Icons.category_outlined,
-              size: 16,
-              color: hasValue ? AppColors.primary : AppColors.neuTextSecondary,
-            ),
-            const SizedBox(width: 8),
-            Expanded(
-              child: Text(
-                _leaveType == null ? '请选择请假类型' : _getLeaveTypeName(_leaveType!),
-                style: TextStyle(
-                  fontSize: 13,
-                  fontWeight: hasValue ? FontWeight.w600 : FontWeight.normal,
-                  color: hasValue
-                      ? AppColors.primary
-                      : AppColors.neuTextSecondary,
-                ),
-              ),
-            ),
-            Icon(
-              Icons.arrow_drop_down,
-              size: 18,
-              color: hasValue ? AppColors.primary : AppColors.neuTextSecondary,
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  String _getLeaveTypeName(LeaveType type) {
-    switch (type) {
-      case LeaveType.annual:
-        return '年假';
-      case LeaveType.sick:
-        return '病假';
-      case LeaveType.compensatory:
-        return '调休';
-      case LeaveType.personal:
-        return '事假';
-    }
   }
 }

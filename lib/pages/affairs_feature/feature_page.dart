@@ -3,6 +3,7 @@ import 'package:oa_fontend/models/affairs.dart';
 import 'package:oa_fontend/models/constants/app_colors.dart';
 import 'package:oa_fontend/models/constants/text_style.dart';
 import 'package:oa_fontend/pages/affairs_feature/leave_page.dart';
+import 'package:oa_fontend/pages/affairs_feature/overtime_page.dart';
 
 abstract class FeaturePage extends StatelessWidget {
   final String title;
@@ -18,6 +19,8 @@ abstract class FeaturePage extends StatelessWidget {
     switch (sm.functionKey) {
       case 'leave_request':
         return LeavePage(title: sm.title, functionKey: sm.functionKey);
+      case 'overtime_request':
+        return OvertimePage(title: sm.title, functionKey: sm.functionKey);
       default:
         return _PlaceholderFeaturePage(
           title: sm.title,

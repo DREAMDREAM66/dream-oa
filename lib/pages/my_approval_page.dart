@@ -43,7 +43,7 @@ class _MyApprovalPageState extends State<MyApprovalPage> {
     setState(() => _isLoading = true);
 
     final response = await apiClient.getMyPendingApprovals();
-
+    if (!mounted) return;
     setState(() {
       _isLoading = false;
       if (response.success && response.data != null) {

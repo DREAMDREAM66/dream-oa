@@ -51,6 +51,45 @@ class LeaveDraft implements Draft {
   }
 }
 
+/// 加班草稿
+class OvertimeDraft implements Draft {
+  final DateTime? startDate;
+  final DateTime? startTime;
+  final DateTime? endDate;
+  final DateTime? endTime;
+  final String reason;
+
+  OvertimeDraft({
+    this.startDate,
+    this.startTime,
+    this.endDate,
+    this.endTime,
+    this.reason = '',
+  });
+
+  @override
+  CategoryCode get categoryCode => CategoryCode.overtime;
+
+  @override
+  Map<String, dynamic> toJson() => {
+    'startDate': startDate?.toIso8601String(),
+    'startTime': startTime?.toIso8601String(),
+    'endDate': endDate?.toIso8601String(),
+    'endTime': endTime?.toIso8601String(),
+    'reason': reason,
+  };
+
+  factory OvertimeDraft.fromJson(Map<String, dynamic> json) {
+    return OvertimeDraft(
+      startDate: json['startDate'] != null ? DateTime.parse(json['startDate']) : null,
+      startTime: json['startTime'] != null ? DateTime.parse(json['startTime']) : null,
+      endDate: json['endDate'] != null ? DateTime.parse(json['endDate']) : null,
+      endTime: json['endTime'] != null ? DateTime.parse(json['endTime']) : null,
+      reason: json['reason'] ?? '',
+    );
+  }
+}
+
 /// 草稿反序列化函数类型
 typedef DraftDeserializer = Draft Function(Map<String, dynamic> json);
 
@@ -111,7 +150,7 @@ final draftManager = DraftManager();
 
 void setupDraftManager() {
   draftManager.registerDeserializer(CategoryCode.leave, (json) => LeaveDraft.fromJson(json));
+  draftManager.registerDeserializer(CategoryCode.overtime, (json) => OvertimeDraft.fromJson(json));
   // 以后新增：
-  // draftManager.registerDeserializer(CategoryCode.overtime, (json) => OvertimeDraft.fromJson(json));
   // draftManager.registerDeserializer(CategoryCode.reimbursement, (json) => ReimbursementDraft.fromJson(json));
 }

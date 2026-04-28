@@ -228,6 +228,45 @@ class LeaveRequest implements ApprovalContent {
 }
 
 // -----------------------------------------
+// 加班
+
+class OvertimeRequest implements ApprovalContent {
+  final DateTime startTime;
+  final DateTime endTime;
+  final String reason;
+
+  OvertimeRequest({
+    required this.startTime,
+    required this.endTime,
+    required this.reason,
+  });
+
+  Map<String, dynamic> toJson() => {
+    'startTime': startTime.toIso8601String(),
+    'endTime': endTime.toIso8601String(),
+    'reason': reason,
+  };
+
+  factory OvertimeRequest.fromJson(Map<String, dynamic> json) {
+    return OvertimeRequest(
+      startTime: DateTime.parse(json['startTime']),
+      endTime: DateTime.parse(json['endTime']),
+      reason: json['reason'] ?? '',
+    );
+  }
+
+  @override
+  String get contentTitle => '加班申请';
+
+  @override
+  List<(String label, dynamic value)> get contentRows => [
+    ('开始时间', startTime),
+    ('结束时间', endTime),
+    ('加班原因', reason),
+  ];
+}
+
+// -----------------------------------------
 // 内容反序列化
 
 /// 根据 CategoryCode 和 JSON 内容反序列化对应的 ApprovalContent
@@ -238,6 +277,8 @@ ApprovalContent? deserializeApprovalContent(
   switch (code) {
     case CategoryCode.leave:
       return LeaveRequest.fromJson(json);
+    case CategoryCode.overtime:
+      return OvertimeRequest.fromJson(json);
     default:
       return null;
   }
