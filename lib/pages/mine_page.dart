@@ -20,6 +20,7 @@ class _MinePageState extends State<MinePage> {
   final TextEditingController _passwordController = TextEditingController();
 
   bool _isLoading = false;
+  bool _isPasswordVisible = false;
   String _errorMsg = '';
   bool get _isLoggedIn =>
       userManager.username != null && userManager.username!.isNotEmpty;
@@ -149,8 +150,22 @@ class _MinePageState extends State<MinePage> {
               controller: _passwordController,
               hintText: '请输入密码',
               prefixIcon: Icons.lock_outline_rounded,
-              obscureText: true,
+              obscureText: !_isPasswordVisible,
               enabled: !_isLoading,
+              suffixIcon: IconButton(
+                icon: Icon(
+                  _isPasswordVisible
+                      ? Icons.visibility_outlined
+                      : Icons.visibility_off_outlined,
+                  size: 20,
+                  color: AppColors.neuTextSecondary,
+                ),
+                onPressed: () {
+                  setState(() {
+                    _isPasswordVisible = !_isPasswordVisible;
+                  });
+                },
+              ),
             ),
             // 错误提示
             if (_errorMsg.isNotEmpty) ...[
@@ -201,6 +216,7 @@ class _MinePageState extends State<MinePage> {
     required IconData prefixIcon,
     bool obscureText = false,
     bool enabled = true,
+    Widget? suffixIcon,
   }) {
     return TextField(
       controller: controller,
@@ -218,6 +234,7 @@ class _MinePageState extends State<MinePage> {
           size: 20,
           color: AppColors.neuTextSecondary,
         ),
+        suffixIcon: suffixIcon,
         filled: true,
         fillColor: AppColors.mainBackground,
         contentPadding: const EdgeInsets.symmetric(
