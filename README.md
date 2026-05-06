@@ -22,6 +22,12 @@ cn 简体中文 | us [English](README_EN.md)
   <img src="screenshots/leave.jpg" width="28%" alt="请假页" />
 </div>
 
+<div align="center">
+  <img src="screenshots/my-approval.jpg" width="28%" alt="待审批" />
+  <img src="screenshots/approve-detail.jpg" width="28%" alt="审批详情" />
+  <img src="screenshots/my-application.jpg" width="28%" alt="我的申请" />
+</div>
+
 <small>⚠️ 截图展示的 UI 样式可能不代表最新版本，实际界面以项目代码为准。</small>
 
 
@@ -31,10 +37,10 @@ cn 简体中文 | us [English](README_EN.md)
 
 - **用户认证**：支持账号密码登录、Token 自动刷新。
 - **打卡**：上下班打卡、打卡信息展示。
-- **审批流程**：发起请假申请。
+- **审批流程**：发起请假/加班申请，操作审批，查看我的申请。
 - **个性化**：多语言支持 (中文/英文)。
 
-*计划中功能：审批链、全局状态控制、自定义表单。*
+*计划中功能：全局状态控制、自定义表单。*
 
 ## 技术栈
 

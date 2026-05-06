@@ -22,6 +22,12 @@
   <img src="screenshots/leave.jpg" width="28%" alt="Leave" />
 </div>
 
+<div align="center">
+  <img src="screenshots/my-approval.jpg" width="28%" alt="待审批" />
+  <img src="screenshots/approve-detail.jpg" width="28%" alt="审批详情" />
+  <img src="screenshots/my-application.jpg" width="28%" alt="我的申请" />
+</div>
+
 <small>⚠️ The UI shown in the screenshots may not reflect the latest version. Actual interface is based on the project code.</small>
 
 
@@ -31,10 +37,10 @@ The project is currently in its early stages. Implemented features include:
 
 - **Authentication**: Username/Password login with automatic Token refresh.
 - **Attendance**: Clock-in/out functionality with history display.
-- **Approval Workflow**: Initiate leave applications.
+- **Approval Workflow**: Initiate leave/overtime applications, manage approvals, and view my applications.
 - **Localization**: Multi-language support (Chinese/English).
 
-*Planned Features: Approval chains, Global State Management, Custom Form Engine.*
+*Planned Features: Global State Management, Custom Form Engine.*
 
 ## Tech Stack
 
