@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'pages/home_page.dart';
 import 'utils/api_client.dart';
 import 'utils/dio_client.dart';
@@ -11,6 +12,9 @@ import 'package:flutter_localizations/flutter_localizations.dart';
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await dotenv.load(fileName: ".env");
+
+  // 锁定为竖屏
+  await SystemChrome.setPreferredOrientations([DeviceOrientation.portraitUp]);
 
   // 初始化
   dioClient.init();
