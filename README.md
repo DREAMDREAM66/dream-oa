@@ -2,7 +2,7 @@
 
 > 一个轻量级（真的吗？）、跨平台的移动端 OA 前端解决方案。支持平台取决于Flutter。
 
-cn 简体中文 | us [English](README_EN.md)
+🇨🇳 简体中文 | 🇺🇸 [English](README_EN.md)
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![Flutter Version](https://img.shields.io/badge/Flutter-3.35.5-blue)](https://flutter.dev)

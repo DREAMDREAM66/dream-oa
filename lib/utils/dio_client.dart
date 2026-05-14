@@ -25,11 +25,13 @@ class DioClient {
       ),
     );
 
-    // 配置忽略证书错误（保留原有行为）
+    // Debug 模式忽略证书错误，Release 模式严格验证
     _dio.httpClientAdapter = IOHttpClientAdapter(
       createHttpClient: () {
         final client = HttpClient();
-        client.badCertificateCallback = (cert, host, port) => true;
+        if (kDebugMode) {
+          client.badCertificateCallback = (cert, host, port) => true;
+        }
         return client;
       },
     );

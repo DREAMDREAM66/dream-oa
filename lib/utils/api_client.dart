@@ -5,7 +5,7 @@ import 'package:dio/io.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-
+import 'package:flutter/foundation.dart';
 import '../models/constants/checkin_enums.dart';
 import '../models/response.dart';
 import '../models/auth.dart';
@@ -77,11 +77,13 @@ class TokenManager {
       ),
     );
 
-    // 配置忽略证书错误
+    // Debug 模式忽略证书错误，Release 模式严格验证
     refreshDio.httpClientAdapter = IOHttpClientAdapter(
       createHttpClient: () {
         final client = HttpClient();
-        client.badCertificateCallback = (cert, host, port) => true;
+        if (kDebugMode) {
+          client.badCertificateCallback = (cert, host, port) => true;
+        }
         return client;
       },
     );
@@ -514,7 +516,7 @@ class ApiClient {
 
   /// 获取用户提交的申请列表
   Future<QuQResponse<List<ApprovalProcessDetailResponse>>>
-      getMyApplications() async {
+  getMyApplications() async {
     try {
       final response = await dioClient.dio.get('/Approval/my-applications');
       return QuQResponse.fromJson(
