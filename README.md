@@ -100,6 +100,30 @@
    final response = await dioClient.dio.get('/Common/current-time');
    ```
 
+### iOS 开发配置
+
+Fork 本项目后，编译 iOS 前需要修改以下配置：
+
+1. **用 Xcode 打开项目**
+   ```bash
+   open ios/Runner.xcworkspace
+   ```
+
+2. **修改 Bundle Identifier**
+   - 选择左侧 `Runner` 项目
+   - 进入 `Signing & Capabilities` 标签页
+   - 将 `com.xcql.dreamoa` 改为你的唯一标识符（如 `com.yourname.yourapp`）
+
+3. **选择开发者 Team**
+   - 在同一页面的 `Team` 下拉菜单中选择你的开发者账号
+
+4. **编译运行**
+   ```bash
+   flutter run
+   ```
+
+> 💡 **提示**：Android 编译无需额外配置，直接 `flutter build apk` 即可。
+
 ## 参与贡献
 
 **作者是刚接触开源世界的个人练习生，欢迎大家在各个角度提出宝贵的建议**

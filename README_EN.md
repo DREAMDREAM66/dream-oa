@@ -100,6 +100,30 @@ The project is currently in its early stages. Implemented features include:
    final response = await dioClient.dio.get('/Common/current-time');
    ```
 
+### iOS Development Configuration
+
+After forking this project, you need to modify the following settings before building for iOS:
+
+1. **Open the project with Xcode**
+   ```bash
+   open ios/Runner.xcworkspace
+   ```
+
+2. **Change Bundle Identifier**
+   - Select the `Runner` project in the left sidebar
+   - Go to the `Signing & Capabilities` tab
+   - Change `com.xcql.dreamoa` to your unique identifier (e.g., `com.yourname.yourapp`)
+
+3. **Select Developer Team**
+   - In the same page, select your developer account from the `Team` dropdown menu
+
+4. **Build & Run**
+   ```bash
+   flutter run
+   ```
+
+> 💡 **Note**: Android builds require no additional configuration. Just run `flutter build apk` directly.
+
 ## Contributing
 
 **The author is a beginner in the open-source world. Contributions and suggestions from all angles are highly welcome!**
