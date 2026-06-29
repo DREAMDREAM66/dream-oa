@@ -267,6 +267,40 @@ class OvertimeRequest implements ApprovalContent {
 }
 
 // -----------------------------------------
+// 补卡
+
+class CorrectCheckinRequest implements ApprovalContent {
+  final DateTime checkinTime;
+  final String reason;
+
+  CorrectCheckinRequest({
+    required this.checkinTime,
+    required this.reason,
+  });
+
+  Map<String, dynamic> toJson() => {
+    'checkinTime': checkinTime.toIso8601String(),
+    'reason': reason,
+  };
+
+  factory CorrectCheckinRequest.fromJson(Map<String, dynamic> json) {
+    return CorrectCheckinRequest(
+      checkinTime: DateTime.parse(json['checkinTime']),
+      reason: json['reason'] ?? '',
+    );
+  }
+
+  @override
+  String get contentTitle => '补卡申请';
+
+  @override
+  List<(String label, dynamic value)> get contentRows => [
+    ('补卡时间', checkinTime),
+    ('补卡原因', reason),
+  ];
+}
+
+// -----------------------------------------
 // 内容反序列化
 
 /// 根据 CategoryCode 和 JSON 内容反序列化对应的 ApprovalContent
@@ -279,6 +313,8 @@ ApprovalContent? deserializeApprovalContent(
       return LeaveRequest.fromJson(json);
     case CategoryCode.overtime:
       return OvertimeRequest.fromJson(json);
+    case CategoryCode.correctCheckin:
+      return CorrectCheckinRequest.fromJson(json);
     default:
       return null;
   }

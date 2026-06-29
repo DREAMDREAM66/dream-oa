@@ -7,11 +7,16 @@ class DatePickerField extends StatelessWidget {
   final DateTime? value;
   final ValueChanged<DateTime> onSelected;
 
+  /// 允许选择的最早日期，默认为今天（适用于请假等场景）。
+  /// 补卡等需要选择过去日期的场景可传入更早的日期。
+  final DateTime? firstDate;
+
   const DatePickerField({
     super.key,
     required this.label,
     required this.value,
     required this.onSelected,
+    this.firstDate,
   });
 
   @override
@@ -30,7 +35,7 @@ class DatePickerField extends StatelessWidget {
     final picked = await showDatePicker(
       context: context,
       initialDate: value ?? DateTime.now(),
-      firstDate: DateTime.now(),
+      firstDate: firstDate ?? DateTime.now(),
       lastDate: DateTime.now().add(const Duration(days: 365)),
       builder: (context, child) {
         return Theme(

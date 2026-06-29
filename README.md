@@ -28,7 +28,15 @@
   <img src="screenshots/my-application.jpg" width="28%" alt="我的申请" />
 </div>
 
-<small>⚠️ 截图展示的 UI 样式可能不代表最新版本，实际界面以项目代码为准。</small>
+> ⚠️ 截图展示的 UI 样式可能不代表最新版本，实际界面以项目代码为准。
+
+
+## 相关项目
+
+| 项目 | 仓库 | 说明 |
+|------|------|------|
+| **前端** | [dream-oa](https://github.com/DREAMDREAM66/dream-oa) | 本项目 |
+| **后端** | [dream-oa-api](https://github.com/DREAMDREAM66/dream-oa-api) | .NET 后端服务 |
 
 
 ## 核心功能

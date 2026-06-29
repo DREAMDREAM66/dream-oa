@@ -90,6 +90,37 @@ class OvertimeDraft implements Draft {
   }
 }
 
+/// 补卡草稿
+class CorrectCheckinDraft implements Draft {
+  final DateTime? checkinDate;
+  final DateTime? checkinTime;
+  final String reason;
+
+  CorrectCheckinDraft({
+    this.checkinDate,
+    this.checkinTime,
+    this.reason = '',
+  });
+
+  @override
+  CategoryCode get categoryCode => CategoryCode.correctCheckin;
+
+  @override
+  Map<String, dynamic> toJson() => {
+    'checkinDate': checkinDate?.toIso8601String(),
+    'checkinTime': checkinTime?.toIso8601String(),
+    'reason': reason,
+  };
+
+  factory CorrectCheckinDraft.fromJson(Map<String, dynamic> json) {
+    return CorrectCheckinDraft(
+      checkinDate: json['checkinDate'] != null ? DateTime.parse(json['checkinDate']) : null,
+      checkinTime: json['checkinTime'] != null ? DateTime.parse(json['checkinTime']) : null,
+      reason: json['reason'] ?? '',
+    );
+  }
+}
+
 /// 草稿反序列化函数类型
 typedef DraftDeserializer = Draft Function(Map<String, dynamic> json);
 
@@ -151,6 +182,7 @@ final draftManager = DraftManager();
 void setupDraftManager() {
   draftManager.registerDeserializer(CategoryCode.leave, (json) => LeaveDraft.fromJson(json));
   draftManager.registerDeserializer(CategoryCode.overtime, (json) => OvertimeDraft.fromJson(json));
+  draftManager.registerDeserializer(CategoryCode.correctCheckin, (json) => CorrectCheckinDraft.fromJson(json));
   // 以后新增：
   // draftManager.registerDeserializer(CategoryCode.reimbursement, (json) => ReimbursementDraft.fromJson(json));
 }

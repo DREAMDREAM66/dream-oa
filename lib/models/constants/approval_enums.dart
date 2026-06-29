@@ -2,7 +2,8 @@ enum CategoryCode {
   leave(1), // 请假
   overtime(2), // 加班
   purchase(3), // 采购
-  reimbursement(4); // 报销
+  reimbursement(4), // 报销
+  correctCheckin(5); // 补卡
 
   final int value;
   const CategoryCode(this.value);

@@ -28,7 +28,15 @@
   <img src="screenshots/my-application.jpg" width="28%" alt="我的申请" />
 </div>
 
-<small>⚠️ The UI shown in the screenshots may not reflect the latest version. Actual interface is based on the project code.</small>
+> ⚠️ The UI shown in the screenshots may not reflect the latest version. Actual interface is based on the project code.
+
+
+## Related Projects
+
+| Project | Repository | Description |
+|---------|------------|-------------|
+| **Frontend** | [dream-oa](https://github.com/DREAMDREAM66/dream-oa) | This project |
+| **Backend** | [dream-oa-api](https://github.com/DREAMDREAM66/dream-oa-api) | .NET backend service |
 
 
 ## Core Features
