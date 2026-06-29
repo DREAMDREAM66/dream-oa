@@ -124,6 +124,10 @@ class DateTimeRangeField extends StatelessWidget {
   final void Function(DateTime? date, DateTime? time) onStartChanged;
   final void Function(DateTime? date, DateTime? time) onEndChanged;
 
+  /// 允许选择的最早日期，默认为今天。
+  /// 加班补报等需要选择过去日期的场景可传入更早的日期。
+  final DateTime? firstDate;
+
   const DateTimeRangeField({
     super.key,
     required this.startDateLabel,
@@ -136,6 +140,7 @@ class DateTimeRangeField extends StatelessWidget {
     required this.endTime,
     required this.onStartChanged,
     required this.onEndChanged,
+    this.firstDate,
   });
 
   @override
@@ -152,6 +157,7 @@ class DateTimeRangeField extends StatelessWidget {
                 label: startDateLabel,
                 value: startDate,
                 onSelected: (date) => onStartChanged(date, startTime),
+                firstDate: firstDate,
               ),
             ),
             const SizedBox(width: 10),
@@ -174,6 +180,7 @@ class DateTimeRangeField extends StatelessWidget {
                 label: endDateLabel,
                 value: endDate,
                 onSelected: (date) => onEndChanged(date, endTime),
+                firstDate: firstDate,
               ),
             ),
             const SizedBox(width: 10),

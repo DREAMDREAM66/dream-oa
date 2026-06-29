@@ -255,6 +255,7 @@ class _OvertimePageContentState extends State<OvertimePageContent> {
             endTime: _endTime,
             onStartChanged: _onStartChanged,
             onEndChanged: _onEndChanged,
+            firstDate: DateTime.now().subtract(const Duration(days: 365)),
           ),
 
           const SizedBox(height: 20),
